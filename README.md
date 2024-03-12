@@ -19,6 +19,7 @@ show microphones shows you the index number for your mic that you need to set ho
 very aware i didnt implement error handling yet so if you get an error itll likely freeze and need to be killed and restarted.
 tried to compile to .exe but failed to get it to work yet.
 
+havent ever tested add path but let me know if it works i couldnt find an app the auto scan didnt work for.
 
 i should add a total list of commands here or in a menu in the app
 for now heres the mains commands 
