@@ -9,14 +9,30 @@ class FirefoxBrowserSearch:
     def __init__(self, settings_path):
         self.settings_path = settings_path
         self.driver = None
+        self.ensure_settings_file()
         self.load_settings()
-
+        
+    def ensure_settings_file(self):
+        # Check if the file exists
+        try:
+            open(self.settings_path, 'r').close()
+        except FileNotFoundError:
+            # If the file does not exist, create it with default settings
+            default_settings = {
+                'firefox_executable_path': '',  # Example default path or leave empty
+                'geckodriver_path': '',  # Example default path or leave empty
+            }
+            with open(self.settings_path, 'w') as settings_file:
+                json.dump(default_settings, settings_file, indent=4)
+            print(f"Created default settings.json at {self.settings_path}")
+            
     def load_settings(self):
         with open(self.settings_path, 'r') as settings_file:
             settings = json.load(settings_file)
         self.firefox_executable_path = settings.get('firefox_executable_path', None)
         self.geckodriver_path = settings.get('geckodriver_path', None)  # Make sure this line is added
 
+    
     def start_browser(self):
         firefox_options = webdriver.FirefoxOptions()
         if self.firefox_executable_path:

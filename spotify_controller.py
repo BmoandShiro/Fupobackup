@@ -23,7 +23,7 @@ class SpotifyController:
         self.sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id,
                                                             client_secret=client_secret,
                                                             redirect_uri=redirect_uri,
-                                                            scope="user-read-playback-state,user-modify-playback-state"))
+                                                            scope="user-read-playback-state,user-modify-playback-state,user-library-modify user-library-read"))
     
     @handle_spotify_exceptions
     def play_song(self, song_name):
