@@ -7,6 +7,8 @@ If it says spotify instance isnt active then click play on spotify to actiavte i
 f24 is current macro keybind for listen 
 run main file
 
+mozilla drivers
+https://github.com/mozilla/geckodriver
 
 firefoxwebdrivergecko is essential for firefox api usage. 
 firefox executable path is self explanatory had this feature fully working till github fucked me so i have to see what format this version requires i forget but not hard to figure out
