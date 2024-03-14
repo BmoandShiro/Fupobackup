@@ -1,0 +1,8 @@
+TODOLIST AND KNOWN BUGS
+
+
+hold toggle for macro seems to be finiscky works till it doesnt.
+
+
+error handling is basically nonexistent
+
