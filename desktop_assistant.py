@@ -34,8 +34,10 @@ class DesktopAssistant(QWidget):
 
 
     def initialize_key_listener(self):
-        # Listen to F24 key, and upon press, call the listen_and_respond method
-        keyboard.add_hotkey('F24', self.listen_and_respond)
+        # Load the custom macro key setting, defaulting to 'F24' if not set
+        macro_key = self.load_setting("macro_key", "F24")
+        # Listen to the specified macro key, and upon press, call the listen_and_respond method
+        keyboard.add_hotkey(macro_key, self.listen_and_respond)
         
     def __init__(self, window):
         super().__init__()  # Initialize the parent QWidget class
@@ -623,6 +625,10 @@ class DesktopAssistant(QWidget):
         self.geckodriver_path_entry.setText(self.load_setting("geckodriver_path", ""))
         layout.addWidget(self.geckodriver_path_entry)
 
+        layout.addWidget(QLabel("Macro Key (e.g., F24, F12, Ctrl+Shift+M)"))
+        self.macro_key_entry = QLineEdit()
+        self.macro_key_entry.setText(self.load_setting("macro_key", "F24"))  # Default to F24 if no setting is saved
+        layout.addWidget(self.macro_key_entry)
 
         # Save Button
         save_button = QPushButton("Save Settings")
@@ -632,7 +638,11 @@ class DesktopAssistant(QWidget):
         self.settings_window.setLayout(layout)
         self.settings_window.exec()  # Use exec() to make the dialog modal
 
-
+        # Add a section for Macro Key in the settings window
+        layout.addWidget(QLabel("Macro Key (e.g., F24, F12, Ctrl+Shift+M)"))
+        self.macro_key_entry = QLineEdit()
+        self.macro_key_entry.setText(self.load_setting("macro_key", "F24"))  # Default to F24 if no setting is saved
+        layout.addWidget(self.macro_key_entry)
 
     def save_settings(self):
         # Save the settings to a file
@@ -644,6 +654,7 @@ class DesktopAssistant(QWidget):
                 "asana_token": self.asana_token_entry.text(),
                 "firefox_path": self.firefox_browser_exe_entry.text(),
                 "geckodriver_path": self.geckodriver_path_entry.text(),
+                "macro_key": self.macro_key_entry.text()
                 # Add more settings as needed...
             }
             with open("settings.json", "w") as file:
