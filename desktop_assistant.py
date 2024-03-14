@@ -24,6 +24,7 @@ from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from firefoxbrowsersearch import FirefoxBrowserSearch
+import sys
 
 
 
@@ -34,10 +35,23 @@ class DesktopAssistant(QWidget):
 
 
     def initialize_key_listener(self):
-        # Load the custom macro key setting, defaulting to 'F24' if not set
         macro_key = self.load_setting("macro_key", "F24")
-        # Listen to the specified macro key, and upon press, call the listen_and_respond method
-        keyboard.add_hotkey(macro_key, self.listen_and_respond)
+        macro_key_hold = self.load_setting("macro_key_hold", False)
+
+        if macro_key_hold:
+            # Implement logic for hold behavior
+            def on_press(event):
+                self.listen_and_respond()  # Example action, modify as needed
+        
+            def on_release(event):
+                # Possibly stop listening or other action on release
+                pass
+
+            keyboard.on_press_key(macro_key, on_press)
+            keyboard.on_release_key(macro_key, on_release)
+        else:
+            # Original behavior for single press
+            keyboard.add_hotkey(macro_key, self.listen_and_respond)
         
     def __init__(self, window):
         super().__init__()  # Initialize the parent QWidget class
@@ -141,6 +155,12 @@ class DesktopAssistant(QWidget):
         self.listen_button = QPushButton("Listen", self.window)
         self.listen_button.clicked.connect(self.on_listen)
         self.layout.addWidget(self.listen_button)
+        
+        # Adding the reset button to the main window as an example
+        self.reset_button = QPushButton("Reset Application")
+        self.reset_button.clicked.connect(self.reset_application)
+        self.layout.addWidget(self.reset_button)
+
 
         # Scan Button
         self.scan_button = QPushButton("Scan for Programs", self.window)
@@ -203,8 +223,25 @@ class DesktopAssistant(QWidget):
                     executables[exec_name] = os.path.join(root, file)
         return executables
 
+    def reset_application(self):
+        """Restart the application."""
+        python = sys.executable
+        os.execl(python, python, *sys.argv)
+        
+    def initialize_reset_macro(self):
+        # Assuming 'reset_application' is the method you want to trigger
+        reset_macro_key = self.load_setting("reset_macro_key", "F23")  # Defaulting to F23 if no specific setting is saved
+
+        # Clear existing hotkeys to avoid conflicts if needed commented out below
+        #keyboard.unhook_all_hotkeys()
     
-    
+        # Register the new macro key to trigger 'reset_application'
+        keyboard.add_hotkey(reset_macro_key, self.reset_application)
+        
+        print(f"Reset macro key set to: {reset_macro_key}")
+
+
+
     
     def get_installed_programs(self):
         installed_programs = {}
@@ -625,10 +662,24 @@ class DesktopAssistant(QWidget):
         self.geckodriver_path_entry.setText(self.load_setting("geckodriver_path", ""))
         layout.addWidget(self.geckodriver_path_entry)
 
+        #Macro key text box
         layout.addWidget(QLabel("Macro Key (e.g., F24, F12, Ctrl+Shift+M)"))
         self.macro_key_entry = QLineEdit()
         self.macro_key_entry.setText(self.load_setting("macro_key", "F24"))  # Default to F24 if no setting is saved
         layout.addWidget(self.macro_key_entry)
+        
+        # Add a checkbox for the Macro Key Hold option in the settings window
+        self.macro_key_hold_toggle = QCheckBox("Hold Macro Key to Listen")
+        self.macro_key_hold_toggle.setChecked(self.load_setting("macro_key_hold", False))  # Default to False if no setting is saved
+        layout.addWidget(self.macro_key_hold_toggle)
+        
+        # Add a section for Reset Macro Key in the settings window
+        layout.addWidget(QLabel("Reset Macro Key (e.g., Ctrl+Alt+R)"))
+        self.reset_macro_key_entry = QLineEdit()
+        # Load the current setting for the reset macro key, with a suitable default if none is set
+        self.reset_macro_key_entry.setText(self.load_setting("reset_macro_key", "Ctrl+Alt+R"))
+        layout.addWidget(self.reset_macro_key_entry)
+
 
         # Save Button
         save_button = QPushButton("Save Settings")
@@ -638,11 +689,10 @@ class DesktopAssistant(QWidget):
         self.settings_window.setLayout(layout)
         self.settings_window.exec()  # Use exec() to make the dialog modal
 
-        # Add a section for Macro Key in the settings window
-        layout.addWidget(QLabel("Macro Key (e.g., F24, F12, Ctrl+Shift+M)"))
-        self.macro_key_entry = QLineEdit()
-        self.macro_key_entry.setText(self.load_setting("macro_key", "F24"))  # Default to F24 if no setting is saved
-        layout.addWidget(self.macro_key_entry)
+        
+        
+        
+
 
     def save_settings(self):
         # Save the settings to a file
@@ -654,7 +704,9 @@ class DesktopAssistant(QWidget):
                 "asana_token": self.asana_token_entry.text(),
                 "firefox_path": self.firefox_browser_exe_entry.text(),
                 "geckodriver_path": self.geckodriver_path_entry.text(),
-                "macro_key": self.macro_key_entry.text()
+                "macro_key": self.macro_key_entry.text(),
+                "macro_key_hold": self.macro_key_hold_toggle.isChecked(),
+                "reset_macro_key": self.reset_macro_key_entry.text()
                 # Add more settings as needed...
             }
             with open("settings.json", "w") as file:
@@ -676,6 +728,8 @@ class DesktopAssistant(QWidget):
         except FileNotFoundError:
             # Handle case where settings file doesn't exist
             pass
+        self.initialize_reset_macro()  # Ensure this is called after settings are loaded
+        
 
     def load_setting(self, key, default_value):
         # Utility method to load individual setting
@@ -685,6 +739,7 @@ class DesktopAssistant(QWidget):
                 return settings.get(key, default_value)
         except FileNotFoundError:
             return default_value
+        self.initialize_reset_macro()  # Ensure this is called after settings are loaded
 
 
     #original_volume_level = volume.GetMasterVolumeLevelScalar()  # Get the current volume level
