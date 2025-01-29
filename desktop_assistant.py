@@ -291,7 +291,13 @@ class DesktopAssistant(QWidget):
         pythoncom.CoInitialize()
         try:
             command = self.listen_command()
-            display_message, spoken_message = self.process_command(command)  # ✅ Unpack tuple
+            response = self.process_command(command)  # 🔍 Can return 1 or 2 values
+
+            # ✅ Ensure response is always a tuple
+            if isinstance(response, tuple) and len(response) == 2:
+                display_message, spoken_message = response  # Normal case
+            else:
+                display_message, spoken_message = response, response  # Wrap single responses
 
             self.speak(spoken_message)  # 🎙️ Speak only the relevant message
             self.updateLabelSignal.emit(display_message)  # 🖥️ Update GUI with the full display message
