@@ -7,25 +7,25 @@ class WeatherAPI:
         self.geo_api_url = "https://nominatim.openstreetmap.org/search"
         self.weather_api_url = "https://api.open-meteo.com/v1/forecast"
 
+    
+
     def get_current_location(self):
-        """Gets user's current location (latitude, longitude, city, state, country) using IP geolocation."""
+        """Get user's current location based on IP using ip-api.com."""
         try:
-            response = requests.get("https://ipapi.co/json/")
-            if response.status_code == 200:
-                data = response.json()
-                lat = data.get("latitude")
-                lon = data.get("longitude")
-                city = data.get("city", "Unknown City")
-                state = data.get("region", "")
-                country = data.get("country_name", "Unknown Country")
-                location = f"{city}, {state}, {country}".strip(", ")
+            response = requests.get("http://ip-api.com/json/").json()
+            if response["status"] == "success":
+                lat = response["lat"]
+                lon = response["lon"]
+                location = f"{response['city']}, {response['regionName']}, {response['country']}"
                 return lat, lon, location
             else:
-                print(f"IP Geolocation Error {response.status_code}: {response.text}")
-                return None, None, None
+                print(f"IP Geolocation Error: {response}")
+                return None, None, "Unknown Location"
         except Exception as e:
-            print(f"Error fetching location: {e}")
-            return None, None, None
+            print(f"IP Geolocation Error: {e}")
+            return None, None, "Unknown Location"
+
+
 
  
 

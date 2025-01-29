@@ -123,3 +123,16 @@ for now heres the mains commands
              return f"Error starting {program_name.capitalize()}: {e}"
      else:
          return f"{program_name.capitalize()} not found in the list of executables."
+
+
+
+
+ Weather
+ Detailed Weather city state = full list of details
+ weather city state = just temp and windspeed
+ weather = auto pulls ip location 
+
+ format example 
+ Detailed Weather Detroit Michigan
+ Weather Detroit Michigan
+ Weather
