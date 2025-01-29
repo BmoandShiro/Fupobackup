@@ -448,13 +448,19 @@ class DesktopAssistant(QWidget):
         # Check if the user is asking about the weather 
         # Get Weather in your city
         if "weather" in command or "temperature" in command:
-            # Remove unnecessary words and extract the city name
-            location = command.replace("get weather", "").replace("what's the weather in", "").replace("tell me the weather in", "").strip()
-    
+            location = command.replace("weather in", "").replace("temperature in", "").strip()
             if not location:
-                return "Please specify a city."
+                location = "auto"  # Use auto location when no city is specified
     
-            return self.weather_api.get_weather(location)
+            display_message, spoken_message = self.weather_api.get_weather(location, spoken_request=command)
+
+            # Update GUI with full message
+            self.updateLabelSignal.emit(display_message)
+
+            # Speak only essential parts
+            return spoken_message
+
+
 
 
         if command == "start essentials":

@@ -1,18 +1,34 @@
 import requests
-
-def degrees_to_direction(degrees):
-    """Convert wind direction in degrees to NESW compass points."""
-    directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
-    index = round(degrees / 45) % 8
-    return directions[index]
+import datetime
 
 class WeatherAPI:
     def __init__(self):
-        pass  # No API key needed for Open-Meteo
+        self.geo_api_url = "https://nominatim.openstreetmap.org/search"
+        self.weather_api_url = "https://api.open-meteo.com/v1/forecast"
+
+    def get_current_location(self):
+        """Gets user's current location (latitude, longitude, city, state, country) using IP geolocation."""
+        try:
+            response = requests.get("https://ipapi.co/json/")
+            if response.status_code == 200:
+                data = response.json()
+                lat = data.get("latitude")
+                lon = data.get("longitude")
+                city = data.get("city", "Unknown City")
+                state = data.get("region", "")
+                country = data.get("country_name", "Unknown Country")
+                location = f"{city}, {state}, {country}".strip(", ")
+                return lat, lon, location
+            else:
+                print(f"IP Geolocation Error {response.status_code}: {response.text}")
+                return None, None, None
+        except Exception as e:
+            print(f"Error fetching location: {e}")
+            return None, None, None
 
     def get_coordinates(self, city):
         """Convert city name to latitude & longitude using OpenStreetMap's Nominatim API."""
-        url = f"https://nominatim.openstreetmap.org/search?format=json&q={city}&limit=1"
+        url = f"{self.geo_api_url}?format=json&q={city}&limit=1"
         headers = {"User-Agent": "FupoAssistant/1.0 (contact: your-email@example.com)"}
 
         try:
@@ -25,10 +41,12 @@ class WeatherAPI:
             if data and isinstance(data, list) and len(data) > 0:
                 lat = float(data[0]["lat"])
                 lon = float(data[0]["lon"])
-                city_name = data[0].get("name", city)
+            
+                # Clean up the location to avoid "Weather in National Weather Service"
+                city_name = data[0].get("name", city).split(",")[0]  # Get first part
                 state = data[0].get("state", "")
                 country = data[0].get("country", "")
-
+            
                 formatted_location = f"{city_name}, {state}, {country}".replace(" ,", "").strip(", ")
                 return lat, lon, formatted_location
             else:
@@ -38,16 +56,22 @@ class WeatherAPI:
             print(f"Geocoding error: {e}")
             return None, None, None
 
-    def get_weather(self, city="auto"):
-        """Fetches weather data from Open-Meteo."""
-        if city.lower() == "auto":
-            return "Please specify a city."
 
-        lat, lon, location = self.get_coordinates(city)
+    def get_weather(self, city="auto", spoken_request=""):
+        """Fetches weather data from Open-Meteo, using either a city name or current location."""
+    
+        # If no location is specified, use auto-detected location
+        if city.lower() == "auto":
+            lat, lon, location = self.get_current_location()
+            if lat is None or lon is None:
+                return "Could not detect your location. Try specifying a city."
+        else:
+            lat, lon, location = self.get_coordinates(city)
+
         if lat is None or lon is None:
             return f"Could not get coordinates for {city}. Try a more specific location."
 
-        url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
+        url = (f"{self.weather_api_url}?latitude={lat}&longitude={lon}"
                f"&current_weather=true&timezone=auto&daily=sunrise,sunset")
 
         try:
@@ -57,21 +81,56 @@ class WeatherAPI:
                 weather = response["current_weather"]
                 temp_c = weather["temperature"]
                 temp_f = round((temp_c * 9/5) + 32, 1)  # Convert to Fahrenheit
-                wind_speed = weather["windspeed"]
-                wind_dir = degrees_to_direction(weather["winddirection"])  # Convert to NESW
+                wind_speed_kmh = weather["windspeed"]
+                wind_speed_mph = round(wind_speed_kmh * 0.621371, 1)  # Convert to MPH
+                wind_dir_degrees = weather["winddirection"]
+                wind_dir = self.degrees_to_direction(wind_dir_degrees)  # Convert to NESW
 
-                # Get sunrise & sunset times
-                sunrise = response.get("daily", {}).get("sunrise", ["N/A"])[0][-5:]  # HH:MM format
-                sunset = response.get("daily", {}).get("sunset", ["N/A"])[0][-5:]  # HH:MM format
+                # Get sunrise & sunset times in AM/PM format
+                sunrise = response.get("daily", {}).get("sunrise", ["N/A"])[0][-5:]
+                sunset = response.get("daily", {}).get("sunset", ["N/A"])[0][-5:]
 
-                return (
-                    f"🌍 **Weather in {location}:**\n"
-                    f"🌡️ Temperature: {temp_c}°C ({temp_f}°F)\n"
-                    f"💨 Wind Speed: {wind_speed} km/h\n"
+                # Convert sunrise & sunset to AM/PM format
+                sunrise_time = datetime.datetime.strptime(sunrise, "%H:%M").strftime("%I:%M %p")
+                sunset_time = datetime.datetime.strptime(sunset, "%H:%M").strftime("%I:%M %p")
+
+                # **SHOW ALL DATA IN TERMINAL**
+                print(f"🌍 Weather in {location}")
+                print(f"🌡️ Temperature: {temp_f}°F ({temp_c}°C)")
+                print(f"💨 Wind Speed: {wind_speed_mph} mph")
+                print(f"🧭 Wind Direction: {wind_dir}")
+                print(f"🌅 Sunrise: {sunrise_time} | 🌇 Sunset: {sunset_time}")
+
+                # **DISPLAY ALL DATA ON DASHBOARD**
+                response_message = (
+                    f"🌍 **Weather in {location}**\n"
+                    f"🌡️ {temp_f}°F\n"
+                    f"💨 {wind_speed_mph} mph\n"
                     f"🧭 Wind Direction: {wind_dir}\n"
-                    f"🌅 Sunrise: {sunrise} | 🌇 Sunset: {sunset}"
+                    f"🌅 Sunrise: {sunrise_time} | 🌇 Sunset: {sunset_time}"
                 )
+
+                # **SPOKEN RESPONSE - Only essential data**
+                spoken_message = f"Weather in {location}: {temp_f}°F, {wind_speed_mph} mph."
+
+                # Only add sunrise/sunset if the user explicitly asks
+                if "sunrise" in spoken_request.lower():
+                    spoken_message += f" Sunrise is at {sunrise_time}."
+                if "sunset" in spoken_request.lower():
+                    spoken_message += f" Sunset is at {sunset_time}."
+                if "wind direction" in spoken_request.lower():
+                    spoken_message += f" Wind direction is {wind_dir}."
+
+                # Return full response for dashboard but spoken only the essential
+                return response_message, spoken_message
             else:
-                return "Weather data not available."
+                return "Weather data not available.", "Weather data not available."
         except Exception as e:
-            return f"Error fetching weather data: {e}"
+            return f"Error fetching weather data: {e}", f"Error fetching weather data."
+
+
+    def degrees_to_direction(self, degrees):
+        """Convert degrees to cardinal direction (NESW)."""
+        directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        index = round(degrees / 45) % 8
+        return directions[index]
