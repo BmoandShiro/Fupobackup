@@ -25,6 +25,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from firefoxbrowsersearch import FirefoxBrowserSearch
 import sys
+from weather_api import WeatherAPI
 
 
 
@@ -109,6 +110,9 @@ class DesktopAssistant(QWidget):
         # Now create a method to start Firefox with these settings
         # Initialize FirefoxBrowserSearch but do not start the browser
         self.firefox_search = FirefoxBrowserSearch("settings.json")
+
+        #weather
+        self.weather_api = WeatherAPI()
 
     def start_firefox_browser(self):
         # This method starts the Firefox browser with the specified options and service
@@ -439,13 +443,29 @@ class DesktopAssistant(QWidget):
 
     def process_command(self, command):
         command = command.lower().strip()
+        
+        #weather
+        # Check if the user is asking about the weather 
+        # Get Weather in your city
+        if "weather" in command or "temperature" in command:
+            # Remove unnecessary words and extract the city name
+            location = command.replace("get weather", "").replace("what's the weather in", "").replace("tell me the weather in", "").strip()
+    
+            if not location:
+                return "Please specify a city."
+    
+            return self.weather_api.get_weather(location)
+
+
         if command == "start essentials":
             return self.start_essential_apps()
+        
         elif "create task" in command:
             task_start = command.find("task") + len("task")
             task_name = command[task_start:].strip()
             if task_name:
                 return self.create_task('1206227946299762', task_name)
+            
         elif command.startswith("start"):
              program_name = command[5:].strip()
              return self.start_program_with_confirmation(program_name)
@@ -515,6 +535,8 @@ class DesktopAssistant(QWidget):
         else:
             return "I'm not sure how to respond to that."
         
+        
+    
         
 
     def play_song_on_spotify(self, song_name):
@@ -661,6 +683,12 @@ class DesktopAssistant(QWidget):
         self.geckodriver_path_entry = QLineEdit()
         self.geckodriver_path_entry.setText(self.load_setting("geckodriver_path", ""))
         layout.addWidget(self.geckodriver_path_entry)
+        
+        '''# Weather API Key
+        layout.addWidget(QLabel("Weather API Key"))
+        self.weather_api_key_entry = QLineEdit()
+        self.weather_api_key_entry.setText(self.load_setting("weather_api_key", ""))
+        layout.addWidget(self.weather_api_key_entry)'''
 
         #Macro key text box
         layout.addWidget(QLabel("Macro Key (e.g., F24, F12, Ctrl+Shift+M)"))
@@ -703,10 +731,12 @@ class DesktopAssistant(QWidget):
                 "spotify_redirect_uri": self.spotify_redirect_uri_entry.text(),
                 "asana_token": self.asana_token_entry.text(),
                 "firefox_path": self.firefox_browser_exe_entry.text(),
+                "weather_api_key": self.weather_api_key_entry.text(),
                 "geckodriver_path": self.geckodriver_path_entry.text(),
                 "macro_key": self.macro_key_entry.text(),
                 "macro_key_hold": self.macro_key_hold_toggle.isChecked(),
                 "reset_macro_key": self.reset_macro_key_entry.text()
+                
                 # Add more settings as needed...
             }
             with open("settings.json", "w") as file:
