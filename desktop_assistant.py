@@ -460,6 +460,7 @@ class DesktopAssistant(QWidget):
         
             display_message, spoken_message = self.weather_api.get_weather(location, spoken_request=command, detailed=detailed_weather_requested)
 
+
             return display_message, spoken_message
 
 

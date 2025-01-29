@@ -76,9 +76,12 @@ class WeatherAPI:
         return cleaned
 
 
+   
+
     def get_weather(self, city="auto", spoken_request="", detailed=False):
         """Fetches weather data from Open-Meteo, using either a city name or current location."""
 
+        # 🛰️ Use current location if "auto" is requested
         if city.lower() == "auto":
             lat, lon, location = self.get_current_location()
             if lat is None or lon is None:
@@ -86,57 +89,106 @@ class WeatherAPI:
         else:
             lat, lon, location = self.get_coordinates(city)
 
+        # ❌ Handle missing coordinates
         if lat is None or lon is None:
             return f"Could not get coordinates for {city}. Try a more specific location.", f"Could not get coordinates for {city}."
 
-        url = (f"{self.weather_api_url}?latitude={lat}&longitude={lon}"
-               f"&current_weather=true&timezone=auto&daily=sunrise,sunset")
+        url = (
+            f"{self.weather_api_url}?latitude={lat}&longitude={lon}"
+            f"&current_weather=true&timezone=auto"
+            f"&daily=sunrise,sunset"
+            f"&hourly=apparent_temperature,cloudcover,dewpoint_2m,precipitation,pressure_msl,windgusts_10m"
+        )
 
         try:
             response = requests.get(url).json()
 
-            if "current_weather" in response:
-                weather = response["current_weather"]
-                temp_c = weather["temperature"]
-                temp_f = round((temp_c * 9/5) + 32, 1)
-                wind_speed_kmh = weather["windspeed"]
-                wind_speed_mph = round(wind_speed_kmh * 0.621371, 1)
-                wind_dir_degrees = weather["winddirection"]
-                wind_dir = self.degrees_to_direction(wind_dir_degrees)
+            # 🔎 DEBUG: Print full API response
+            print("🔎 Open-Meteo API Response:", response)
 
-                sunrise = response.get("daily", {}).get("sunrise", ["N/A"])[0][-5:]
-                sunset = response.get("daily", {}).get("sunset", ["N/A"])[0][-5:]
+            if "current_weather" not in response:
+                return "Weather data not available.", "Weather data not available."
 
-                sunrise_time = datetime.datetime.strptime(sunrise, "%H:%M").strftime("%I:%M %p")
-                sunset_time = datetime.datetime.strptime(sunset, "%H:%M").strftime("%I:%M %p")
+            weather = response["current_weather"]
+            temp_c = weather["temperature"]
+            temp_f = round((temp_c * 9/5) + 32, 1)
+            wind_speed_kmh = weather["windspeed"]
+            wind_speed_mph = round(wind_speed_kmh * 0.621371, 1)
+            wind_dir_degrees = weather["winddirection"]
+            wind_dir = self.degrees_to_direction(wind_dir_degrees)
 
-                # **SHOW ALL DATA IN TERMINAL**
-                print(f"🌍 Weather in {location}")
-                print(f"🌡️ Temperature: {temp_f}°F ({temp_c}°C)")
-                print(f"💨 Wind Speed: {wind_speed_mph} mph")
-                print(f"🧭 Wind Direction: {wind_dir}")
-                print(f"🌅 Sunrise: {sunrise_time} | 🌇 Sunset: {sunset_time}")
+            sunrise = response.get("daily", {}).get("sunrise", ["N/A"])[0][-5:]
+            sunset = response.get("daily", {}).get("sunset", ["N/A"])[0][-5:]
+            sunrise_time = datetime.datetime.strptime(sunrise, "%H:%M").strftime("%I:%M %p")
+            sunset_time = datetime.datetime.strptime(sunset, "%H:%M").strftime("%I:%M %p")
 
-                # **DISPLAY ALL DATA ON DASHBOARD**
-                response_message = (
-                    f"🌍 **Weather in {location}**\n"
-                    f"🌡️ {temp_f}°F\n"
-                    f"💨 {wind_speed_mph} mph\n"
-                    f"🧭 Wind Direction: {wind_dir}\n"
-                    f"🌅 Sunrise: {sunrise_time} | 🌇 Sunset: {sunset_time}"
+            # 🔍 Additional Data for "Detailed Weather"
+            feels_like_c = response.get("hourly", {}).get("apparent_temperature", ["N/A"])[0]
+            feels_like_f = round((feels_like_c * 9/5) + 32, 1) if feels_like_c != "N/A" else "N/A"
+            humidity = response.get("hourly", {}).get("humidity_2m", ["N/A"])[0]
+            dew_point_c = response.get("hourly", {}).get("dewpoint_2m", ["N/A"])[0]
+            dew_point_f = round((dew_point_c * 9/5) + 32, 1) if dew_point_c != "N/A" else "N/A"
+            cloud_cover = response.get("hourly", {}).get("cloudcover", ["N/A"])[0]
+            precipitation = response.get("hourly", {}).get("precipitation", ["N/A"])[0]
+            pressure = response.get("hourly", {}).get("pressure_msl", ["N/A"])[0]
+            gust_speed_kmh = response.get("hourly", {}).get("windgusts_10m", ["N/A"])[0]
+            gust_speed_mph = round(gust_speed_kmh * 0.621371, 1) if gust_speed_kmh != "N/A" else "N/A"
+
+            # **SHOW ALL DATA IN TERMINAL**
+            print(f"🌍 Weather in {location}")
+            print(f"🌡️ Temperature: {temp_f}°F ({temp_c}°C)")
+            print(f"🌡️ Feels Like: {feels_like_f}°F ({feels_like_c}°C)")
+            print(f"💧 Humidity: {humidity}%")
+            print(f"🔵 Dew Point: {dew_point_f}°F ({dew_point_c}°C)")
+            print(f"☁️ Cloud Cover: {cloud_cover}%")
+            print(f"🌧️ Precipitation: {precipitation} mm")
+            print(f"📈 Pressure: {pressure} hPa")
+            print(f"💨 Wind Speed: {wind_speed_mph} mph")
+            print(f"🌪️ Wind Gusts: {gust_speed_mph} mph")
+            print(f"🧭 Wind Direction: {wind_dir}")
+            print(f"🌅 Sunrise: {sunrise_time} | 🌇 Sunset: {sunset_time}")
+
+            # **DISPLAY ALL DATA ON DASHBOARD (Always Detailed)**
+            response_message = (
+                f"🌍 **Weather in {location}**\n"
+                f"🌡️ Temperature: {temp_f}°F ({temp_c}°C)\n"
+                f"🌡️ Feels Like: {feels_like_f}°F ({feels_like_c}°C)\n"
+                f"💧 Humidity: {humidity}%\n"
+                f"🔵 Dew Point: {dew_point_f}°F ({dew_point_c}°C)\n"
+                f"☁️ Cloud Cover: {cloud_cover}%\n"
+                f"🌧️ Precipitation: {precipitation} mm\n"
+                f"📈 Pressure: {pressure} hPa\n"
+                f"💨 Wind Speed: {wind_speed_mph} mph\n"
+                f"🌪️ Wind Gusts: {gust_speed_mph} mph\n"
+                f"🧭 Wind Direction: {wind_dir}\n"
+                f"🌅 Sunrise: {sunrise_time} | 🌇 Sunset: {sunset_time}"
+            )
+
+            # **SPOKEN RESPONSE - Adjusted for "Detailed Weather"**
+            spoken_message = f"Weather in {location}: {temp_f}°F, {wind_speed_mph} mph."
+        
+            if "detailed weather" in spoken_request.lower():
+                spoken_message += (
+                    f" Feels like {feels_like_f}°F. "
+                    f"Humidity {humidity}%. "
+                    f"Dew point {dew_point_f}°F. "
+                    f"Cloud cover {cloud_cover}%. "
+                    f"Precipitation {precipitation} mm. "
+                    f"Pressure {pressure} hPa. "
+                    f"Gusts up to {gust_speed_mph} mph."
                 )
 
-                # **SPOKEN RESPONSE - Adjusted based on request**
-                spoken_message = f"Weather in {location}: {temp_f}°F, {wind_speed_mph} mph."
-            
-                if detailed:
-                    spoken_message += f" Wind direction {wind_dir}, sunrise at {sunrise_time}, sunset at {sunset_time}."
+            if "sunrise" in spoken_request.lower():
+                spoken_message += f" Sunrise is at {sunrise_time}."
+            if "sunset" in spoken_request.lower():
+                spoken_message += f" Sunset is at {sunset_time}."
 
-                return response_message, spoken_message  # ✅ Always return a tuple
-            else:
-                return "Weather data not available.", "Weather data not available."
+            return response_message, spoken_message  # ✅ Always return a tuple
+
         except Exception as e:
             return f"Error fetching weather data: {e}", f"Error fetching weather data."
+
+
 
 
     def degrees_to_direction(self, degrees):
