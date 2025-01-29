@@ -76,9 +76,9 @@ class WeatherAPI:
         return cleaned
 
 
-    def get_weather(self, city="auto", spoken_request=""):
+    def get_weather(self, city="auto", spoken_request="", detailed=False):
         """Fetches weather data from Open-Meteo, using either a city name or current location."""
-    
+
         if city.lower() == "auto":
             lat, lon, location = self.get_current_location()
             if lat is None or lon is None:
@@ -126,15 +126,11 @@ class WeatherAPI:
                     f"🌅 Sunrise: {sunrise_time} | 🌇 Sunset: {sunset_time}"
                 )
 
-                # **SPOKEN RESPONSE - Only essential data**
+                # **SPOKEN RESPONSE - Adjusted based on request**
                 spoken_message = f"Weather in {location}: {temp_f}°F, {wind_speed_mph} mph."
-
-                if "sunrise" in spoken_request.lower():
-                    spoken_message += f" Sunrise is at {sunrise_time}."
-                if "sunset" in spoken_request.lower():
-                    spoken_message += f" Sunset is at {sunset_time}."
-                if "wind direction" in spoken_request.lower():
-                    spoken_message += f" Wind direction is {wind_dir}."
+            
+                if detailed:
+                    spoken_message += f" Wind direction {wind_dir}, sunrise at {sunrise_time}, sunset at {sunset_time}."
 
                 return response_message, spoken_message  # ✅ Always return a tuple
             else:

@@ -1,4 +1,4 @@
-
+﻿
 import speech_recognition as sr
 import pyttsx3
 import threading
@@ -288,18 +288,16 @@ class DesktopAssistant(QWidget):
         threading.Thread(target=self.listen_and_respond).start()
 
     def listen_and_respond(self):
-        # Initialize COM library for the new thread
         pythoncom.CoInitialize()
-        
         try:
             command = self.listen_command()
-            response = self.process_command(command)
-            self.speak(response)
+            display_message, spoken_message = self.process_command(command)  # ✅ Unpack tuple
 
-            # Emit the signal instead of calling QTimer.singleShot
-            self.updateLabelSignal.emit(response)
+            self.speak(spoken_message)  # 🎙️ Speak only the relevant message
+            self.updateLabelSignal.emit(display_message)  # 🖥️ Update GUI with the full display message
         finally:
             pythoncom.CoUninitialize()
+
 
     # The slot that updates the label
     def update_label(self, text):
@@ -447,18 +445,16 @@ class DesktopAssistant(QWidget):
         #weather
         # Check if the user is asking about the weather 
         # Get Weather in your city
-        if "weather" in command or "temperature" in command:
-            location = command.replace("weather in", "").replace("temperature in", "").strip()
-            if not location:
-                location = "auto"  # Use auto location when no city is specified
-    
-            display_message, spoken_message = self.weather_api.get_weather(location, spoken_request=command)
+        if "weather" in command:
+            detailed_weather_requested = "detailed weather" in command  # Detect detailed request
+            location = command.replace("detailed weather", "").replace("weather", "").strip()
+        
+            if not location:  # If no location provided, use auto-location
+                location = "auto"
+        
+            display_message, spoken_message = self.weather_api.get_weather(location, spoken_request=command, detailed=detailed_weather_requested)
 
-            # Update GUI with full message
-            self.updateLabelSignal.emit(display_message)
-
-            # Speak only essential parts
-            return spoken_message
+            return display_message, spoken_message
 
 
 
