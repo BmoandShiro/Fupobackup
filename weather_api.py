@@ -96,8 +96,9 @@ class WeatherAPI:
         url = (
             f"{self.weather_api_url}?latitude={lat}&longitude={lon}"
             f"&current_weather=true&timezone=auto"
+            f"&hourly=relative_humidity_2m,apparent_temperature,cloudcover,"
+            f"dewpoint_2m,precipitation,pressure_msl,windgusts_10m"
             f"&daily=sunrise,sunset"
-            f"&hourly=apparent_temperature,cloudcover,dewpoint_2m,precipitation,pressure_msl,windgusts_10m"
         )
 
         try:
@@ -124,15 +125,18 @@ class WeatherAPI:
 
             # 🔍 Additional Data for "Detailed Weather"
             feels_like_c = response.get("hourly", {}).get("apparent_temperature", ["N/A"])[0]
-            feels_like_f = round((feels_like_c * 9/5) + 32, 1) if feels_like_c != "N/A" else "N/A"
-            humidity = response.get("hourly", {}).get("humidity_2m", ["N/A"])[0]
+            feels_like_f = round((feels_like_c * 9/5) + 32, 1) if isinstance(feels_like_c, (int, float)) else "N/A"
+
+            humidity = response.get("hourly", {}).get("relative_humidity_2m", ["N/A"])[0]
             dew_point_c = response.get("hourly", {}).get("dewpoint_2m", ["N/A"])[0]
-            dew_point_f = round((dew_point_c * 9/5) + 32, 1) if dew_point_c != "N/A" else "N/A"
+            dew_point_f = round((dew_point_c * 9/5) + 32, 1) if isinstance(dew_point_c, (int, float)) else "N/A"
+
             cloud_cover = response.get("hourly", {}).get("cloudcover", ["N/A"])[0]
             precipitation = response.get("hourly", {}).get("precipitation", ["N/A"])[0]
             pressure = response.get("hourly", {}).get("pressure_msl", ["N/A"])[0]
+
             gust_speed_kmh = response.get("hourly", {}).get("windgusts_10m", ["N/A"])[0]
-            gust_speed_mph = round(gust_speed_kmh * 0.621371, 1) if gust_speed_kmh != "N/A" else "N/A"
+            gust_speed_mph = round(gust_speed_kmh * 0.621371, 1) if isinstance(gust_speed_kmh, (int, float)) else "N/A"
 
             # **SHOW ALL DATA IN TERMINAL**
             print(f"🌍 Weather in {location}")
@@ -166,7 +170,7 @@ class WeatherAPI:
 
             # **SPOKEN RESPONSE - Adjusted for "Detailed Weather"**
             spoken_message = f"Weather in {location}: {temp_f}°F, {wind_speed_mph} mph."
-        
+    
             if "detailed weather" in spoken_request.lower():
                 spoken_message += (
                     f" Feels like {feels_like_f}°F. "
@@ -187,6 +191,7 @@ class WeatherAPI:
 
         except Exception as e:
             return f"Error fetching weather data: {e}", f"Error fetching weather data."
+
 
 
 
