@@ -734,10 +734,7 @@ class DesktopAssistant(QWidget):
 
         
         
-    def open_weather_dashboard(self):
-        """Opens the Weather Dashboard window."""
-        self.weather_dashboard = WeatherDashboard()
-        self.weather_dashboard.show()
+    
 
 
         def save_settings(self):
@@ -765,7 +762,11 @@ class DesktopAssistant(QWidget):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")
 
-
+    def open_weather_dashboard(self):
+        """Opens the Weather Dashboard window."""
+        self.weather_dashboard = WeatherDashboard()
+        self.weather_dashboard.show()
+        
     def load_settings(self):
         # Load the settings from a file
         try:
