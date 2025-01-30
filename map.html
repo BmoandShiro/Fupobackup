@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+</head>
+<body>
+
+    <div id="map" style="width: 100%; height: 100vh;"></div>
+
+    <script>
+    var map = L.map('map').setView([42.3314, -83.0458], 10);  // Detroit Default
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    function updateWeatherOverlay() {
+        fetch('weather_data.json')
+        .then(response => response.json())
+        .then(data => {
+            if (data.latitude && data.longitude) {
+                var temp = data.temp;
+                var wind_speed = data.wind_speed;
+                var cloud_cover = data.cloud_cover;
+
+                // Remove old markers
+                map.eachLayer(function (layer) {
+                    if (layer instanceof L.Marker || layer instanceof L.Circle) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                // Add new marker
+                L.marker([data.latitude, data.longitude])
+                .addTo(map)
+                .bindPopup(`🌡️ Temp: ${temp}°C<br>💨 Wind: ${wind_speed} km/h<br>☁️ Cloud Cover: ${cloud_cover}%`)
+                .openPopup();
+
+                // Add a circle with color based on temp
+                var color = temp > 25 ? 'red' : (temp > 15 ? 'orange' : 'blue');
+                L.circle([data.latitude, data.longitude], {
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.5,
+                    radius: 5000
+                }).addTo(map);
+            }
+        });
+    }
+
+    // Auto-update every 60 seconds
+    setInterval(updateWeatherOverlay, 60000);
+    updateWeatherOverlay();
+    </script>
+
+</body>
+</html>

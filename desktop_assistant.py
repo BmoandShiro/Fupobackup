@@ -26,6 +26,7 @@ from selenium.webdriver.firefox.service import Service as FirefoxService
 from firefoxbrowsersearch import FirefoxBrowserSearch
 import sys
 from weather_api import WeatherAPI
+from Weather_dashboard import WeatherDashboard
 
 
 
@@ -185,6 +186,11 @@ class DesktopAssistant(QWidget):
         self.add_path_button = QPushButton("Add Path...", self.window)
         self.add_path_button.clicked.connect(self.prompt_path_entry)
         self.layout.addWidget(self.add_path_button)
+        
+        # **Weather Dashboard Button**
+        self.weather_button = QPushButton("🌦️ Weather", self.window)
+        self.weather_button.clicked.connect(self.open_weather_dashboard)
+        self.layout.addWidget(self.weather_button)
 
         # Progress Bar
         self.progress = QProgressBar(self.window)
@@ -728,33 +734,36 @@ class DesktopAssistant(QWidget):
 
         
         
-        
+    def open_weather_dashboard(self):
+        """Opens the Weather Dashboard window."""
+        self.weather_dashboard = WeatherDashboard()
+        self.weather_dashboard.show()
 
 
-    def save_settings(self):
-        # Save the settings to a file
-        try:
-            settings = {
-                "spotify_client_id": self.spotify_client_id_entry.text(),
-                "spotify_client_secret": self.spotify_client_secret_entry.text(),
-                "spotify_redirect_uri": self.spotify_redirect_uri_entry.text(),
-                "asana_token": self.asana_token_entry.text(),
-                "firefox_path": self.firefox_browser_exe_entry.text(),
-                "weather_api_key": self.weather_api_key_entry.text(),
-                "geckodriver_path": self.geckodriver_path_entry.text(),
-                "macro_key": self.macro_key_entry.text(),
-                "macro_key_hold": self.macro_key_hold_toggle.isChecked(),
-                "reset_macro_key": self.reset_macro_key_entry.text()
+        def save_settings(self):
+            # Save the settings to a file
+            try:
+                settings = {
+                    "spotify_client_id": self.spotify_client_id_entry.text(),
+                    "spotify_client_secret": self.spotify_client_secret_entry.text(),
+                    "spotify_redirect_uri": self.spotify_redirect_uri_entry.text(),
+                    "asana_token": self.asana_token_entry.text(),
+                    "firefox_path": self.firefox_browser_exe_entry.text(),
+                    "weather_api_key": self.weather_api_key_entry.text(),
+                    "geckodriver_path": self.geckodriver_path_entry.text(),
+                    "macro_key": self.macro_key_entry.text(),
+                    "macro_key_hold": self.macro_key_hold_toggle.isChecked(),
+                    "reset_macro_key": self.reset_macro_key_entry.text()
                 
-                # Add more settings as needed...
-            }
-            with open("settings.json", "w") as file:
-                json.dump(settings, file)
-            # Reload settings in the application
-            self.load_settings()
-            QMessageBox.information(self, "Success", "Settings saved successfully.")
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")
+                    # Add more settings as needed...
+                }
+                with open("settings.json", "w") as file:
+                    json.dump(settings, file)
+                # Reload settings in the application
+                self.load_settings()
+                QMessageBox.information(self, "Success", "Settings saved successfully.")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")
 
 
     def load_settings(self):

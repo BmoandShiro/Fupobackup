@@ -3,12 +3,16 @@
   "WorkspaceRootPath": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\BMO\\source\\repos\\Fupobackup\\main.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:main.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\BMO\\source\\repos\\Fupobackup\\desktop_assistant.py||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:desktop_assistant.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\BMO\\source\\repos\\Fupobackup\\main.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:main.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\BMO\\source\\repos\\Fupobackup\\nws_alerts.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:nws_alerts.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\BMO\\source\\repos\\Fupobackup\\README.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
@@ -34,7 +38,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 7,
           "Children": [
             {
               "$type": "Bookmark",
@@ -43,6 +47,19 @@
             {
               "$type": "Document",
               "DocumentIndex": 2,
+              "Title": "nws_alerts.py",
+              "DocumentMoniker": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\nws_alerts.py",
+              "RelativeDocumentMoniker": "nws_alerts.py",
+              "ToolTip": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\nws_alerts.py",
+              "RelativeToolTip": "nws_alerts.py",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2025-01-30T21:50:01.985Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
               "Title": "README.md",
               "DocumentMoniker": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\README.md",
               "RelativeDocumentMoniker": "README.md",
@@ -55,7 +72,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "spotify_controller.py",
               "DocumentMoniker": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\spotify_controller.py",
               "RelativeDocumentMoniker": "spotify_controller.py",
@@ -68,7 +85,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "firefoxbrowsersearch.py",
               "DocumentMoniker": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\firefoxbrowsersearch.py",
               "RelativeDocumentMoniker": "firefoxbrowsersearch.py",
@@ -76,12 +93,11 @@
               "RelativeToolTip": "firefoxbrowsersearch.py",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAACoAAAAWAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-03-12T00:52:00.038Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-03-12T00:52:00.038Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "audio_ducking.py",
               "DocumentMoniker": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\audio_ducking.py",
               "RelativeDocumentMoniker": "audio_ducking.py",
@@ -89,31 +105,30 @@
               "RelativeToolTip": "audio_ducking.py",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-03-12T00:51:59.386Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-03-12T00:51:59.386Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "desktop_assistant.py",
               "DocumentMoniker": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\desktop_assistant.py",
               "RelativeDocumentMoniker": "desktop_assistant.py",
               "ToolTip": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\desktop_assistant.py",
               "RelativeToolTip": "desktop_assistant.py",
-              "ViewState": "AQIAAKsBAAAAAAAAAAAkwM8BAAAyAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAB4AAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-03-12T00:51:58.719Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "main.py",
               "DocumentMoniker": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\main.py",
               "RelativeDocumentMoniker": "main.py",
               "ToolTip": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\main.py",
               "RelativeToolTip": "main.py",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAA8AAAAAAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABUAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-03-12T00:51:41.982Z",
               "EditorCaption": ""
