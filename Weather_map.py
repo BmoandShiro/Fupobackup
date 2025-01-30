@@ -1,7 +1,7 @@
 ﻿import os
 import json
 import requests
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import QUrl  
 from PyQt6.QtWebEngineCore import QWebEngineSettings
@@ -9,34 +9,52 @@ from PyQt6.QtWebEngineCore import QWebEngineSettings
 class WeatherMap(QWidget):
     def __init__(self):
         super().__init__()
+        self.map_loaded = False  # Track if map is loaded
         self.init_ui()
 
     def init_ui(self):
-        """Sets up the PyQt WebEngineView to display an interactive map."""
-        layout = QVBoxLayout()
-        self.browser = QWebEngineView()
+        """Sets up the UI, but does NOT load the map or fetch weather data on start."""
+        self.layout = QVBoxLayout()
 
-        # ✅ Enable local file and remote content access to prevent CORS issues
-        settings = self.browser.settings()
-        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
-        settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
+        # Button to trigger map loading
+        self.load_map_button = QPushButton("Load Weather Map")
+        self.load_map_button.clicked.connect(self.load_map)
+        self.layout.addWidget(self.load_map_button)
 
-        self.load_map()
-        layout.addWidget(self.browser)
-        self.setLayout(layout)
+        # Button to update weather overlay (disabled until map loads)
+        self.update_weather_button = QPushButton("Update Weather Overlay")
+        self.update_weather_button.setEnabled(False)  # Starts disabled
+        self.update_weather_button.clicked.connect(self.update_weather_overlay)
+        self.layout.addWidget(self.update_weather_button)
+
+        self.setLayout(self.layout)
 
     def load_map(self):
-        """Loads the embedded map.html file."""
-        map_path = os.path.abspath("templates/map.html")
+        """Loads the embedded map.html file when triggered."""
+        if not self.map_loaded:
+            map_path = os.path.abspath("templates/map.html")
+            if not os.path.exists(map_path):
+                print(f"⚠️ ERROR: Map file not found at {map_path}")
+                return
 
-        if not os.path.exists(map_path):
-            print(f"⚠️ ERROR: Map file not found at {map_path}")
+            print(f"✅ Loading Map: {map_path}")
+            self.browser = QWebEngineView()
+
+            # Enable local content access to prevent CORS issues
+            settings = self.browser.settings()
+            settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
+            settings.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
+
+            self.browser.setUrl(QUrl.fromLocalFile(map_path))
+            self.layout.addWidget(self.browser)
+            self.map_loaded = True
+
+            # Enable weather update button after map loads
+            self.update_weather_button.setEnabled(True)
         else:
-            print(f"✅ Map file exists: {map_path}")
+            print("🔄 Map already loaded.")
 
-        self.browser.setUrl(QUrl.fromLocalFile(map_path))
-
-    def update_weather_overlay():
+    def update_weather_overlay(self):
         """Fetches Open-Meteo weather data and updates the map overlay dynamically."""
         api_url = "https://api.open-meteo.com/v1/forecast?latitude=42.3314&longitude=-83.0458&current_weather=true&hourly=temperature_2m,cloudcover,precipitation&timezone=auto"
 
@@ -69,12 +87,13 @@ class WeatherMap(QWidget):
 
             print(f"✅ Weather data saved successfully at: {weather_data_path}")
 
+            # Trigger JavaScript update only if the map is loaded
+            if hasattr(self, "browser"):
+                self.browser.page().runJavaScript("updateWeatherOverlay();")
+
         except requests.exceptions.RequestException as req_err:
             print(f"❌ ERROR: Failed to fetch weather data - {req_err}")
         except json.JSONDecodeError as json_err:
             print(f"❌ ERROR: JSON decoding failed - {json_err}")
         except Exception as e:
             print(f"❌ Unexpected ERROR: {e}")
-
-    # Run the function manually to create the JSON
-    update_weather_overlay()
