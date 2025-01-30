@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+</head>
+<body>
+
+    <div id="map" style="width: 100%; height: 100vh;"></div>
+
+    <script>
+        var map = L.map('map').setView([42.3314, -83.0458], 4);  // USA-centered
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        let markers = [];
+
+        function updateWeatherOverlay() {
+            fetch('weather_data.json')
+                .then(response => response.json())
+                .then(data => {
+                    markers.forEach(marker => map.removeLayer(marker)); // Remove old markers
+                    markers = [];
+
+                    data.locations.forEach(loc => {
+                        let temp = loc.temp;
+                        let wind_speed = loc.wind_speed;
+                        let cloud_cover = loc.cloud_cover;
+                        let rain = loc.rain;
+
+                        let popupContent = `
+                        <b>${loc.name}</b><br>
+                        🌡️ Temp: ${temp}°C<br>
+                        💨 Wind: ${wind_speed} km/h<br>
+                        ☁️ Cloud Cover: ${cloud_cover}%<br>
+                        🌧️ Rain: ${rain}mm
+                    `;
+
+                        let color = temp > 25 ? 'red' : (temp > 15 ? 'orange' : 'blue');
+
+                        let marker = L.marker([loc.latitude, loc.longitude])
+                            .addTo(map)
+                            .bindPopup(popupContent)
+                            .openPopup();
+
+                        let circle = L.circle([loc.latitude, loc.longitude], {
+                            color: color,
+                            fillColor: color,
+                            fillOpacity: 0.5,
+                            radius: 50000  // Larger coverage area
+                        }).addTo(map);
+
+                        markers.push(marker, circle);
+                    });
+                });
+        }
+
+        // Update every 10 minutes
+        setInterval(updateWeatherOverlay, 600000);
+    </script>
+
+</body>
+</html>
