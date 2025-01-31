@@ -5,12 +5,17 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton
 from PyQt6.QtWebEngineWidgets import QWebEngineView
 from PyQt6.QtCore import QUrl  
 from PyQt6.QtWebEngineCore import QWebEngineSettings
+from weather_api import WeatherAPI
+
 
 class WeatherMap(QWidget):
     def __init__(self):
         super().__init__()
         self.map_loaded = False  # Track if map is loaded
+        self.weather_api = WeatherAPI()
+        self.latitude, self.longitude, self.location = self.weather_api.get_current_location()  # Get user's location
         self.init_ui()
+
 
     def init_ui(self):
         """Sets up the UI, but does NOT load the map or fetch weather data on start."""
@@ -56,7 +61,8 @@ class WeatherMap(QWidget):
 
     def update_weather_overlay(self):
         """Fetches Open-Meteo weather data and updates the map overlay dynamically."""
-        api_url = "https://api.open-meteo.com/v1/forecast?latitude=42.3314&longitude=-83.0458&current_weather=true&hourly=temperature_2m,cloudcover,precipitation&timezone=auto"
+        api_url = f"https://api.open-meteo.com/v1/forecast?latitude={self.latitude}&longitude={self.longitude}&current_weather=true&hourly=temperature_2m,cloudcover,precipitation&timezone=auto"
+
 
         print("🟡 Fetching weather data from API...")
 

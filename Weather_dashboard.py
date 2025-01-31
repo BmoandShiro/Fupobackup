@@ -1,6 +1,7 @@
 ﻿
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QListWidget, QCheckBox, QComboBox
 from Weather_map import WeatherMap  # Import the interactive weather map
+from weather_api import WeatherAPI  # Ensure WeatherAPI is imported
 
 class WeatherDashboard(QWidget):
     def __init__(self):
@@ -50,11 +51,30 @@ class WeatherDashboard(QWidget):
         # **Set Layout**
         self.setLayout(layout)
 
+    from weather_api import WeatherAPI  # Ensure WeatherAPI is imported
+
     def fetch_weather(self):
-        """Fetches weather for entered city."""
-        city = self.city_input.text()
+        """Fetches weather for the entered city and updates the map."""
+        city = self.city_input.text().strip()
+    
         if city:
-            print(f"Fetching weather for {city}...")  # Replace with API call
+            print(f"🔍 Fetching weather for {city}...")
+            weather_api = WeatherAPI()
+            latitude, longitude, location = weather_api.get_coordinates(city)
+        
+            if latitude and longitude:
+                # Update the weather map's location
+                self.Weather_map.latitude = latitude
+                self.Weather_map.longitude = longitude
+                self.Weather_map.location = location
+
+                print(f"📍 New Coordinates: {latitude}, {longitude} ({location})")
+            
+                # Trigger weather update
+                self.Weather_map.update_weather_overlay()
+            else:
+                print(f"⚠️ Could not find coordinates for {city}")
+
 
     def fetch_current_weather(self):
         """Fetches weather using current location."""
