@@ -24,6 +24,18 @@
                 display: inline-block;
                 margin-right: 5px;
             }
+
+        .temp-label {
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+            padding: 2px 5px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 3px;
+            border: 1px solid black;
+        }
+
     </style>
 </head>
 <body>
@@ -41,23 +53,25 @@
         let heatmapVisible = true;
         let currentZoom = map.getZoom();  // Store initial zoom level
 
-        // 🔹 Color Legend for Temperature Heatmap
+        // 🔹 Fixed Color Legend for Fahrenheit Scale
         var legend = L.control({ position: 'bottomright' });
 
         legend.onAdd = function () {
             var div = L.DomUtil.create('div', 'info legend'),
-                grades = [0, 5, 10, 15, 20, 25, 30], // Temperature thresholds
-                colors = ["blue", "cyan", "green", "yellow", "orange", "red"];
+                grades = [32, 45, 55, 65, 75, 85, 95], // ✅ Fahrenheit temperature thresholds
+                colors = ["blue", "cyan", "green", "yellow", "orange", "red", "darkred"];
 
             for (var i = 0; i < grades.length; i++) {
                 div.innerHTML +=
-                    '<i style="background:' + colors[i] + '"></i> ' +
-                    grades[i] + (grades[i + 1] ? grades[i] + '°C - ' + grades[i + 1] + '°C<br>' : '°C+');
+                    '<i style="background:' + colors[i] + '; width: 18px; height: 18px; display: inline-block;"></i> ' +
+                    grades[i] + (grades[i + 1] ? '°F - ' + grades[i + 1] + '°F<br>' : '°F+');
             }
             return div;
         };
 
         legend.addTo(map);
+
+
 
         // 🔍 Listen for Zoom Changes & Notify Backend
         map.on('zoomend', function () {
@@ -111,9 +125,13 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.latitude && data.longitude) {
-                        var temp = data.temp;
+                        var temp = Math.round((data.temp * 9 / 5) + 32);  // ✅ Convert °C → °F
                         var wind_speed = data.wind_speed;
                         var cloud_cover = data.cloud_cover;
+
+                        // ✅ Debugging: Log fetched coordinates
+                        console.log(`✅ Weather Data Fetched: Latitude: ${data.latitude}, Longitude: ${data.longitude}`);
+                        console.log(`🌡️ Temp: ${temp}°F, 💨 Wind: ${wind_speed} km/h, ☁️ Cloud Cover: ${cloud_cover}%`);
 
                         // Remove old markers
                         map.eachLayer(function (layer) {
@@ -125,25 +143,48 @@
                         // Add new weather marker
                         L.marker([data.latitude, data.longitude])
                             .addTo(map)
-                            .bindPopup(`🌡️ Temp: ${temp}°C<br>💨 Wind: ${wind_speed} km/h<br>☁️ Cloud Cover: ${cloud_cover}%`)
+                            .bindPopup(`🌡️ Temp: ${temp}°F<br>💨 Wind: ${wind_speed} km/h<br>☁️ Cloud Cover: ${cloud_cover}%`)
                             .openPopup();
 
                         // Add a circle with color based on temperature
-                        var color = temp > 25 ? 'red' : (temp > 15 ? 'orange' : 'blue');
+                        var color = temp > 77 ? 'red' : (temp > 59 ? 'orange' : 'blue');
                         L.circle([data.latitude, data.longitude], {
                             color: color,
                             fillColor: color,
                             fillOpacity: 0.5,
                             radius: 5000
                         }).addTo(map);
-                    }
-                });
 
-            // 🔹 Fetch and update heatmap data
+                        // ✅ Ensure the heatmap updates right after the weather
+                        updateHeatmapOverlay();
+                    }
+                })
+                .catch(error => console.error("❌ Error loading weather data:", error));
+        }
+
+                
+
+        // ✅ Function to Fetch & Update Heatmap Data
+        function updateHeatmapOverlay() {
+            console.log("🔄 Updating heatmap...");
+
             fetch('heatmap_data.json')
                 .then(response => response.json())
                 .then(heatmapData => {
-                    let heatPoints = heatmapData.map(point => [point.latitude, point.longitude, point.intensity]);
+                    if (!heatmapData.length) {
+                        console.warn("⚠️ No heatmap data found!");
+                        return;
+                    }
+
+                    // ✅ Normalize heatmap intensity between fixed min/max values (32°F - 100°F)
+                    const minTemp = 32;   // Lowest expected temperature
+                    const maxTemp = 100;  // Highest expected temperature
+
+                    let heatPoints = heatmapData.map((point, index) => {
+                        let normalizedIntensity = (point.intensity - minTemp) / (maxTemp - minTemp); // Scale 0-1
+                        normalizedIntensity = Math.max(0, Math.min(normalizedIntensity, 1)); // Clamp values
+                        return [point.latitude, point.longitude, normalizedIntensity];
+                    });
 
                     // Remove old heatmap before adding new data
                     if (heatLayer) {
@@ -160,9 +201,29 @@
                     if (heatmapVisible) {
                         heatLayer.addTo(map);
                     }
+
+                    // ✅ Add temperature labels every 5th data point
+                    heatmapData.forEach((point, index) => {
+                        if (index % 5 === 0) {  // ✅ Only add label for every 5th point
+                            let tempF = Math.round(point.intensity);  // ✅ Keep values as Fahrenheit
+
+
+                            L.marker([point.latitude, point.longitude], {
+                                icon: L.divIcon({
+                                    className: 'temp-label',
+                                    html: `<b style="color:black; background:white; padding:2px; border-radius:3px;">${tempF}°F</b>`,
+                                    iconSize: [30, 10]
+                                })
+                            }).addTo(map);
+                        }
+                    });
+
+                    console.log("✅ Heatmap updated successfully.");
                 })
                 .catch(error => console.error("❌ Error loading heatmap data:", error));
         }
+
+
 
         // Auto-update every 60 seconds
         setInterval(updateWeatherOverlay, 60000);

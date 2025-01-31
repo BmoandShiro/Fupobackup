@@ -122,6 +122,8 @@ class WeatherMap(QWidget):
         lat_min, lat_max = self.latitude - 2, self.latitude + 2
         lon_min, lon_max = self.longitude - 2, self.longitude + 2
 
+        print(f"📍 Heatmap bounding box: Lat({lat_min} to {lat_max}), Lon({lon_min} to {lon_max})")
+
         lat_points = [round(lat_min + i * spacing, 2) for i in range(int((lat_max - lat_min) / spacing) + 1)]
         lon_points = [round(lon_min + i * spacing, 2) for i in range(int((lon_max - lon_min) / spacing) + 1)]
 
@@ -135,10 +137,11 @@ class WeatherMap(QWidget):
                 response.raise_for_status()
                 data = response.json()
 
-                temp = data.get("current_weather", {}).get("temperature", None)
-                if temp is not None:
-                    print(f"✅ Data: {lat}, {lon} -> Temp: {temp}°C")
-                    return {"latitude": lat, "longitude": lon, "intensity": temp}
+                temp_celsius = data.get("current_weather", {}).get("temperature", None)
+                if temp_celsius is not None:
+                    temp_fahrenheit = round((temp_celsius * 9/5) + 32, 2)  # ✅ Convert °C → °F
+                    print(f"✅ Data: {lat}, {lon} -> Temp: {temp_fahrenheit}°F")
+                    return {"latitude": lat, "longitude": lon, "intensity": temp_fahrenheit}  # ✅ Store in °F
             except requests.exceptions.RequestException as req_err:
                 print(f"❌ ERROR fetching weather at ({lat}, {lon}): {req_err}")
             return None
@@ -164,9 +167,10 @@ class WeatherMap(QWidget):
                 json.dump(weather_data, file)
             print(f"✅ Heatmap data saved successfully at: {heatmap_data_path}")
 
-            # Trigger JavaScript update
+            # ✅ Ensure the browser refreshes the heatmap after saving new data
             if hasattr(self, "browser"):
-                self.browser.page().runJavaScript("updateWeatherOverlay();")
+                print("🔄 Running updateHeatmapOverlay() in JavaScript")
+                self.browser.page().runJavaScript("updateHeatmapOverlay();")  # Refresh heatmap
 
         except Exception as e:
             print(f"❌ ERROR writing heatmap_data.json: {e}")
