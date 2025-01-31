@@ -8,6 +8,7 @@ from PyQt6.QtCore import QUrl
 from PyQt6.QtWebEngineCore import QWebEngineSettings
 from weather_api import WeatherAPI
 from flask import Flask, jsonify
+import concurrent.futures  # Add for parallel requests
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -126,26 +127,29 @@ class WeatherMap(QWidget):
 
         weather_data = []
 
-        for lat in lat_points:
-            for lon in lon_points:
-                api_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&timezone=auto"
+        def fetch_weather(lat, lon):
+            """Fetches weather data for a specific location."""
+            api_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&timezone=auto"
+            try:
+                response = requests.get(api_url)
+                response.raise_for_status()
+                data = response.json()
 
-                try:
-                    response = requests.get(api_url)
-                    response.raise_for_status()
-                    data = response.json()
+                temp = data.get("current_weather", {}).get("temperature", None)
+                if temp is not None:
+                    print(f"✅ Data: {lat}, {lon} -> Temp: {temp}°C")
+                    return {"latitude": lat, "longitude": lon, "intensity": temp}
+            except requests.exceptions.RequestException as req_err:
+                print(f"❌ ERROR fetching weather at ({lat}, {lon}): {req_err}")
+            return None
 
-                    temp = data.get("current_weather", {}).get("temperature", None)
-                    if temp is not None:
-                        weather_data.append({
-                            "latitude": lat,
-                            "longitude": lon,
-                            "intensity": temp
-                        })
-                        print(f"✅ Data: {lat}, {lon} -> Temp: {temp}°C")
-
-                except requests.exceptions.RequestException as req_err:
-                    print(f"❌ ERROR fetching weather at ({lat}, {lon}): {req_err}")
+        # Fetch data in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {executor.submit(fetch_weather, lat, lon): (lat, lon) for lat in lat_points for lon in lon_points}
+            for future in concurrent.futures.as_completed(futures):
+                result = future.result()
+                if result:
+                    weather_data.append(result)
 
         if not weather_data:
             print("⚠️ No weather data collected! Heatmap file will be empty.")
