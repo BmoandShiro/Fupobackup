@@ -70,8 +70,8 @@ class WeatherMap(QWidget):
                 "temp": data.get("current_weather", {}).get("temperature", "N/A"),
                 "wind_speed": data.get("current_weather", {}).get("windspeed", "N/A"),
                 "cloud_cover": data.get("hourly", {}).get("cloudcover", [None])[0],
-                "latitude": 42.3314,
-                "longitude": -83.0458
+                "latitude": self.latitude,
+                "longitude": self.longitude
             }
 
             print(f"🟢 Parsed Weather Data: {weather_overlay}")
