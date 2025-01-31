@@ -19,7 +19,7 @@ class WeatherDashboard(QWidget):
         layout.addWidget(self.Weather_map)
 
         # **Manual Location Entry**
-        layout.addWidget(QLabel("🌍 Enter City:"))
+        layout.addWidget(QLabel("🌍 Enter City State:"))
         self.city_input = QLineEdit()
         layout.addWidget(self.city_input)
 
@@ -51,7 +51,7 @@ class WeatherDashboard(QWidget):
         # **Set Layout**
         self.setLayout(layout)
 
-    from weather_api import WeatherAPI  # Ensure WeatherAPI is imported
+    
 
     def fetch_weather(self):
         """Fetches weather for the entered city and updates the map."""
