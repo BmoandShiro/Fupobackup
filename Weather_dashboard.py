@@ -1,5 +1,5 @@
 ﻿
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QListWidget, QCheckBox, QComboBox
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QListWidget, QCheckBox, QComboBox, QDialog, QMessageBox, QSlider, QLabel
 from Weather_map import WeatherMap  # Import the interactive weather map
 from weather_api import WeatherAPI  # Ensure WeatherAPI is imported
 
@@ -37,6 +37,20 @@ class WeatherDashboard(QWidget):
         self.use_location_btn = QPushButton("📍 Use Current Location")
         self.use_location_btn.clicked.connect(self.fetch_current_weather)
         layout.addWidget(self.use_location_btn)
+        
+        # **Heatmap Settings Button**
+        self.heatmap_settings_btn = QPushButton("⚙ Heatmap Settings")
+        self.heatmap_settings_btn.clicked.connect(self.open_heatmap_settings)
+        layout.addWidget(self.heatmap_settings_btn)
+
+
+        # **Heatmap Toggle Button**
+        self.toggle_heatmap_btn = QPushButton("🌡️ Toggle Heatmap")
+        self.toggle_heatmap_btn.setCheckable(True)  # Enables toggle functionality
+        self.toggle_heatmap_btn.setChecked(True)  # Default: ON
+        self.toggle_heatmap_btn.clicked.connect(self.toggle_heatmap)
+        layout.addWidget(self.toggle_heatmap_btn)
+
 
         # **Weather Alerts Toggle**
         self.alerts_toggle = QCheckBox("🔔 Enable NWS Alerts")
@@ -79,3 +93,58 @@ class WeatherDashboard(QWidget):
     def fetch_current_weather(self):
         """Fetches weather using current location."""
         print("Fetching weather for current location...")  # Replace with API call
+
+    def toggle_heatmap(self):
+        """Enable or disable heatmap visibility on the map."""
+        is_enabled = self.toggle_heatmap_btn.isChecked()
+        js_command = "showHeatmap(true);" if is_enabled else "showHeatmap(false);"
+    
+        if hasattr(self.Weather_map, "browser"):
+            self.Weather_map.browser.page().runJavaScript(js_command)
+
+    def open_heatmap_settings(self):
+        """Opens a settings dialog for adjusting the heatmap parameters."""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Heatmap Settings")
+        dialog.setGeometry(300, 200, 300, 250)
+
+        layout = QVBoxLayout()
+
+        # Intensity Slider
+        layout.addWidget(QLabel("🔥 Heatmap Intensity"))
+        intensity_slider = QSlider()
+        intensity_slider.setMinimum(1)
+        intensity_slider.setMaximum(10)
+        intensity_slider.setValue(5)
+        layout.addWidget(intensity_slider)
+
+        # Radius Slider
+        layout.addWidget(QLabel("🎯 Point Radius"))
+        radius_slider = QSlider()
+        radius_slider.setMinimum(5)
+        radius_slider.setMaximum(50)
+        radius_slider.setValue(20)
+        layout.addWidget(radius_slider)
+
+        # Blur Slider
+        layout.addWidget(QLabel("🌫️ Blur Level"))
+        blur_slider = QSlider()
+        blur_slider.setMinimum(5)
+        blur_slider.setMaximum(50)
+        blur_slider.setValue(15)
+        layout.addWidget(blur_slider)
+
+        # Apply Button
+        apply_btn = QPushButton("Apply Settings")
+        apply_btn.clicked.connect(lambda: self.apply_heatmap_settings(intensity_slider.value(), radius_slider.value(), blur_slider.value()))
+        layout.addWidget(apply_btn)
+
+        dialog.setLayout(layout)
+        dialog.exec()
+        
+    def apply_heatmap_settings(self, intensity, radius, blur):
+        """Applies user-defined heatmap settings dynamically."""
+        js_command = f"updateHeatmapSettings({intensity}, {radius}, {blur});"
+    
+        if hasattr(self.Weather_map, "browser"):
+            self.Weather_map.browser.page().runJavaScript(js_command)

@@ -7,41 +7,59 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+    <style>
+        .info.legend {
+            background: white;
+            padding: 8px;
+            border-radius: 5px;
+            line-height: 1.2;
+            font-size: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+
+            .info.legend i {
+                width: 18px;
+                height: 18px;
+                display: inline-block;
+                margin-right: 5px;
+            }
+    </style>
 </head>
 <body>
 
     <div id="map" style="width: 100%; height: 100vh;"></div>
 
     <script>
-        var map = L.map('map').setView([42.3314, -83.0458], 10);  // Default Detroit
+        var map = L.map('map').setView([42.3314, -83.0458], 8);  // Default: Detroit
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
         let heatLayer;
+        let heatmapVisible = true;
         let currentZoom = map.getZoom();  // Store initial zoom level
 
+        // 🔹 Color Legend for Temperature Heatmap
         var legend = L.control({ position: 'bottomright' });
 
-        legend.onAdd = function (map) {
+        legend.onAdd = function () {
             var div = L.DomUtil.create('div', 'info legend'),
                 grades = [0, 5, 10, 15, 20, 25, 30], // Temperature thresholds
                 colors = ["blue", "cyan", "green", "yellow", "orange", "red"];
 
-            // Loop through temp values and create color labels
             for (var i = 0; i < grades.length; i++) {
                 div.innerHTML +=
                     '<i style="background:' + colors[i] + '"></i> ' +
-                    grades[i] + (grades[i + 1] ? '°C - ' + grades[i + 1] + '°C<br>' : '°C+');
+                    grades[i] + (grades[i + 1] ? grades[i] + '°C - ' + grades[i + 1] + '°C<br>' : '°C+');
             }
             return div;
         };
 
         legend.addTo(map);
 
-
-        // 🔍 Listen for zoom changes and notify Python
+        // 🔍 Listen for Zoom Changes & Notify Backend
         map.on('zoomend', function () {
             let newZoom = map.getZoom();
             if (newZoom !== currentZoom) {
@@ -51,14 +69,44 @@
                     .then(response => response.json())
                     .then(data => {
                         console.log("✅ Server acknowledged zoom change:", data);
-                        updateWeatherOverlay();  // Refresh the heatmap dynamically
+                        updateWeatherOverlay();  // Refresh dynamically
                     })
                     .catch(error => console.error("❌ Error sending zoom level:", error));
             }
         });
 
+        // ✅ Function to Update Heatmap Settings (From Python)
+        function updateHeatmapSettings(intensity, radius, blur) {
+            if (heatLayer) {
+                map.removeLayer(heatLayer);
+            }
+
+            heatLayer = L.heatLayer(heatmapData, {
+                radius: radius,
+                blur: blur,
+                maxZoom: 12,
+                minOpacity: 0.4,
+                max: intensity / 10  // Normalize intensity
+            }).addTo(map);
+        }
+
+        // ✅ Function to Toggle Heatmap Visibility
+        function toggleHeatmap() {
+            heatmapVisible = !heatmapVisible;
+            if (heatLayer) {
+                if (heatmapVisible) {
+                    map.addLayer(heatLayer);
+                } else {
+                    map.removeLayer(heatLayer);
+                }
+            }
+        }
+
+        // ✅ Function to Fetch & Update Weather Data
         function updateWeatherOverlay() {
-            // Fetch and update main weather marker
+            console.log("🔄 Updating weather data...");
+
+            // 🔹 Fetch and update main weather marker
             fetch('weather_data.json')
                 .then(response => response.json())
                 .then(data => {
@@ -91,7 +139,7 @@
                     }
                 });
 
-            // Fetch and update heatmap data
+            // 🔹 Fetch and update heatmap data
             fetch('heatmap_data.json')
                 .then(response => response.json())
                 .then(heatmapData => {
@@ -103,18 +151,23 @@
                     }
 
                     heatLayer = L.heatLayer(heatPoints, {
-                        radius: 30,   // Increase for smoother blending
+                        radius: 30,   // Smooth blending
                         blur: 25,     // Reduce sharp circles
-                        maxZoom: 12,  // Show more detail when zoomed in
-                        minOpacity: 0.4  // Make sure weaker data points are still visible
-                    }).addTo(map);
+                        maxZoom: 12,  // More detail when zoomed in
+                        minOpacity: 0.4
+                    });
+
+                    if (heatmapVisible) {
+                        heatLayer.addTo(map);
+                    }
                 })
-                .catch(error => console.error("Error loading heatmap data:", error));
+                .catch(error => console.error("❌ Error loading heatmap data:", error));
         }
 
         // Auto-update every 60 seconds
         setInterval(updateWeatherOverlay, 60000);
         updateWeatherOverlay();
+
     </script>
 
 </body>
