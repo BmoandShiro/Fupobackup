@@ -73,7 +73,7 @@ class WeatherMap(QWidget):
 
     def update_weather_overlay(self):
         """Fetches Open-Meteo weather data for the user's location only."""
-        print("🟡 Fetching current weather data...")
+        print(f"🟡 Fetching current weather data for coordinates: {self.latitude}, {self.longitude}")
 
         api_url = f"https://api.open-meteo.com/v1/forecast?latitude={self.latitude}&longitude={self.longitude}&current_weather=true&timezone=auto"
 
@@ -109,7 +109,7 @@ class WeatherMap(QWidget):
 
     def update_heatmap_overlay(self):
         """Fetches Open-Meteo weather data based on zoom level and updates the heatmap."""
-        print(f"🟡 Fetching heatmap data (Zoom: {self.current_zoom})...")
+        print(f"🟡 Fetching heatmap data for center coordinates: {self.latitude}, {self.longitude} (Zoom: {self.current_zoom})")
 
         # Adjust spacing based on zoom level
         if self.current_zoom > 10:   # High detail (zoomed in)

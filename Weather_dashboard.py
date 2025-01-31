@@ -70,22 +70,23 @@ class WeatherDashboard(QWidget):
     def fetch_weather(self):
         """Fetches weather for the entered city and updates the map."""
         city = self.city_input.text().strip()
-    
+
         if city:
             print(f"🔍 Fetching weather for {city}...")
             weather_api = WeatherAPI()
             latitude, longitude, location = weather_api.get_coordinates(city)
-        
+    
             if latitude and longitude:
                 # Update the weather map's location
                 self.Weather_map.latitude = latitude
                 self.Weather_map.longitude = longitude
                 self.Weather_map.location = location
 
-                print(f"📍 New Coordinates: {latitude}, {longitude} ({location})")
-            
-                # Trigger weather update
+                print(f"📍 Updated Coordinates: {latitude}, {longitude} ({location})")
+        
+                # Trigger weather update **after** coordinates are updated
                 self.Weather_map.update_weather_overlay()
+                self.Weather_map.update_heatmap_overlay()  # Ensure heatmap updates too
             else:
                 print(f"⚠️ Could not find coordinates for {city}")
 
