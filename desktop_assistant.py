@@ -18,7 +18,7 @@ from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import pythoncom
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QProgressBar, QCheckBox, QStyleFactory, QLineEdit, QDialog, QInputDialog, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QProgressBar, QCheckBox, QStyleFactory, QLineEdit, QDialog, QInputDialog, QMessageBox, QTabWidget, QTextEdit
 from PyQt6.QtGui import QPalette, QColor, QAction
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from selenium import webdriver
@@ -147,66 +147,81 @@ class DesktopAssistant(QWidget):
 
         QApplication.setPalette(dark_palette)
 
-    from PyQt6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QProgressBar, QCheckBox
+    
 
     def create_widgets(self):
-        self.layout = QVBoxLayout(self.window)
+        self.layout = QVBoxLayout(self)
+        self.tabs = QTabWidget(self)
+        self.layout.addWidget(self.tabs)
 
-        # Label
-        self.label = QLabel("Welcome to your Desktop Assistant!", self.window)
-        self.layout.addWidget(self.label)
+        # Home Tab
+        self.home_tab = QWidget()
+        self.home_layout = QVBoxLayout(self.home_tab)
+        self.tabs.addTab(self.home_tab, "Home")
 
-        # Listen Button
-        self.listen_button = QPushButton("Listen", self.window)
+        self.label = QLabel("Welcome to your Desktop Assistant!", self.home_tab)
+        self.home_layout.addWidget(self.label)
+
+        self.listen_button = QPushButton("Listen", self.home_tab)
         self.listen_button.clicked.connect(self.on_listen)
-        self.layout.addWidget(self.listen_button)
-        
-        # Adding the reset button to the main window as an example
-        self.reset_button = QPushButton("Reset Application")
+        self.home_layout.addWidget(self.listen_button)
+
+        self.reset_button = QPushButton("Reset Application", self.home_tab)
         self.reset_button.clicked.connect(self.reset_application)
-        self.layout.addWidget(self.reset_button)
+        self.home_layout.addWidget(self.reset_button)
 
-
-        # Scan Button
-        self.scan_button = QPushButton("Scan for Programs", self.window)
+        self.scan_button = QPushButton("Scan for Programs", self.home_tab)
         self.scan_button.clicked.connect(self.on_scan)
-        self.layout.addWidget(self.scan_button)
+        self.home_layout.addWidget(self.scan_button)
 
-        # Microphone Button
-        self.mic_button = QPushButton("Show Microphones", self.window)
+        self.mic_button = QPushButton("Show Microphones", self.home_tab)
         self.mic_button.clicked.connect(self.show_mics)
-        self.layout.addWidget(self.mic_button)
+        self.home_layout.addWidget(self.mic_button)
 
-        # Shortcuts Button
-        self.shortcuts_button = QPushButton("Show Shortcuts", self.window)
+        self.shortcuts_button = QPushButton("Show Shortcuts", self.home_tab)
         self.shortcuts_button.clicked.connect(self.show_shortcuts)
-        self.layout.addWidget(self.shortcuts_button)
+        self.home_layout.addWidget(self.shortcuts_button)
 
-        # Add Path Button
-        self.add_path_button = QPushButton("Add Path...", self.window)
+        self.add_path_button = QPushButton("Add Path...", self.home_tab)
         self.add_path_button.clicked.connect(self.prompt_path_entry)
-        self.layout.addWidget(self.add_path_button)
-        
-        # **Weather Dashboard Button**
-        self.weather_button = QPushButton("🌦️ Weather", self.window)
+        self.home_layout.addWidget(self.add_path_button)
+
+        self.weather_button = QPushButton("🌦️ Weather", self.home_tab)
         self.weather_button.clicked.connect(self.open_weather_dashboard)
-        self.layout.addWidget(self.weather_button)
+        self.home_layout.addWidget(self.weather_button)
 
-        # Progress Bar
-        self.progress = QProgressBar(self.window)
+        self.progress = QProgressBar(self.home_tab)
         self.progress.setMaximum(100)
-        self.layout.addWidget(self.progress)
+        self.home_layout.addWidget(self.progress)
 
-        # Progress Label
-        self.progress_label = QLabel("0%", self.window)
-        self.layout.addWidget(self.progress_label)
+        self.progress_label = QLabel("0%", self.home_tab)
+        self.home_layout.addWidget(self.progress_label)
 
-        # Audio Ducking Checkbox
-        self.ducking_checkbox = QCheckBox("Toggle Audio Ducking", self.window)
+        self.ducking_checkbox = QCheckBox("Toggle Audio Ducking", self.home_tab)
         self.ducking_checkbox.stateChanged.connect(self.toggle_audio_ducking)
-        self.layout.addWidget(self.ducking_checkbox)
+        self.home_layout.addWidget(self.ducking_checkbox)
+
+        # Placeholder Tabs
+        self.weather_tab = QWidget()
+        self.tabs.addTab(self.weather_tab, "Weather")
+        self.weather_tab_layout = QVBoxLayout(self.weather_tab)  # For Feature 7
+
+        self.system_tab = QWidget()
+        self.tabs.addTab(self.system_tab, "System")
+        self.system_tab_layout = QVBoxLayout(self.system_tab)  # For Feature 1
+
+        self.chat_tab = QWidget()
+        self.tabs.addTab(self.chat_tab, "Chat")
+        self.chat_tab_layout = QVBoxLayout(self.chat_tab)  # For Feature 12
+
+        self.tools_tab = QWidget()
+        self.tabs.addTab(self.tools_tab, "Tools")
+        self.tools_tab_layout = QVBoxLayout(self.tools_tab)  # For Feature 11, 5
 
         self.setLayout(self.layout)
+
+    def update_label(self, text):
+        self.label.setText(text)  # Still works for Home tab; adjust for Chat l
 
     
     def init_volume_control(self):
