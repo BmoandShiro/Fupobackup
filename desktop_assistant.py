@@ -18,16 +18,20 @@ from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 import pythoncom
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QProgressBar, QCheckBox, QStyleFactory, QLineEdit, QDialog, QInputDialog, QMessageBox, QTabWidget, QTextEdit
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QLabel, QProgressBar, QCheckBox, QStyleFactory, QLineEdit, QDialog, QInputDialog, QMessageBox, QTabWidget, QTextEdit, QComboBox
 from PyQt6.QtGui import QPalette, QColor, QAction
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from firefoxbrowsersearch import FirefoxBrowserSearch
 import sys
 from weather_api import WeatherAPI
 from Weather_dashboard import WeatherDashboard
-
+import pyautogui
+from datetime import datetime
+import psutil
+from system_monitor import SystemMonitor
+import pyqtgraph as pg
 
 
 class DesktopAssistant(QWidget):
@@ -59,6 +63,11 @@ class DesktopAssistant(QWidget):
         super().__init__()  # Initialize the parent QWidget class
         self.window = window
         self.configure_dark_theme()
+        
+        # Start system monitoring thread with default 5-second interval
+        self.system_monitor = SystemMonitor(interval=5000)  # 5 seconds in milliseconds
+        self.system_monitor.stats_updated.connect(self.update_system_stats)
+        self.system_monitor.start()
         
         # Connect the signal to the slot
         self.confirmationSignal.connect(self.confirm_start_program)
@@ -114,6 +123,14 @@ class DesktopAssistant(QWidget):
 
         #weather
         self.weather_api = WeatherAPI()
+        
+        
+
+        # Initialize plot data
+        self.cpu_data = []
+        self.ram_data = []
+        self.disk_data = []
+        self.time_data = []
 
     def start_firefox_browser(self):
         # This method starts the Firefox browser with the specified options and service
@@ -206,19 +223,102 @@ class DesktopAssistant(QWidget):
         self.tabs.addTab(self.weather_tab, "Weather")
         self.weather_tab_layout = QVBoxLayout(self.weather_tab)  # For Feature 7
 
+        # System Tab (with charts)
         self.system_tab = QWidget()
+        self.system_tab_layout = QVBoxLayout(self.system_tab)
         self.tabs.addTab(self.system_tab, "System")
-        self.system_tab_layout = QVBoxLayout(self.system_tab)  # For Feature 1
 
+        self.system_toggle = QCheckBox("Enable System Monitoring", self.system_tab)
+        self.system_toggle.stateChanged.connect(self.toggle_system_monitoring)
+        self.system_tab_layout.addWidget(self.system_toggle)
+
+        # CPU Chart
+        self.cpu_plot = pg.PlotWidget(self.system_tab)
+        self.cpu_plot.setLabel('left', 'CPU Usage (%)')
+        self.cpu_plot.setLabel('bottom', 'Time')
+        self.cpu_curve = self.cpu_plot.plot(pen='b')
+        self.system_tab_layout.addWidget(self.cpu_plot)
+
+        # RAM Chart
+        self.ram_plot = pg.PlotWidget(self.system_tab)
+        self.ram_plot.setLabel('left', 'RAM Usage (%)')
+        self.ram_plot.setLabel('bottom', 'Time')
+        self.ram_curve = self.ram_plot.plot(pen='m')
+        self.system_tab_layout.addWidget(self.ram_plot)
+
+        # Disk Chart
+        self.disk_plot = pg.PlotWidget(self.system_tab)
+        self.disk_plot.setLabel('left', 'Disk Usage (%)')
+        self.disk_plot.setLabel('bottom', 'Time')
+        self.disk_curve = self.disk_plot.plot(pen='g')
+        self.system_tab_layout.addWidget(self.disk_plot)
+        
+        # Chat Tab
         self.chat_tab = QWidget()
         self.tabs.addTab(self.chat_tab, "Chat")
         self.chat_tab_layout = QVBoxLayout(self.chat_tab)  # For Feature 12
 
+        # Tools Tab (new content for Feature 11)
         self.tools_tab = QWidget()
+        self.tools_tab_layout = QVBoxLayout(self.tools_tab)
         self.tabs.addTab(self.tools_tab, "Tools")
-        self.tools_tab_layout = QVBoxLayout(self.tools_tab)  # For Feature 11, 5
+
+        self.screenshot_button = QPushButton("📸 Take Screenshot", self.tools_tab)
+        self.screenshot_button.clicked.connect(self.take_screenshot)
+        self.tools_tab_layout.addWidget(self.screenshot_button)
+
+        self.tools_label = QLabel("Tools output will appear here.", self.tools_tab)
+        self.tools_tab_layout.addWidget(self.tools_label)
 
         self.setLayout(self.layout)
+        
+    def toggle_system_monitoring(self, state):
+        """Toggle system monitoring on/off and update interval from settings."""
+        enabled = state == Qt.CheckState.Checked.value
+        self.system_monitor.set_enabled(enabled)
+        if not enabled:
+            self.cpu_curve.setData([])
+            self.ram_curve.setData([])
+            self.disk_curve.setData([])
+            self.cpu_data.clear()
+            self.ram_data.clear()
+            self.disk_data.clear()
+            self.time_data.clear()
+
+    def update_system_stats(self, cpu_percent, ram_percent, ram_used, ram_total, disk_percent):
+        """Update system monitoring stats and charts from thread."""
+        if self.system_monitor.enabled:
+            current_time = len(self.time_data)
+            self.cpu_data.append(cpu_percent)
+            self.ram_data.append(ram_percent)
+            self.disk_data.append(disk_percent)
+            self.time_data.append(current_time)
+
+            # Limit data points for performance
+            if len(self.cpu_data) > 100:  # Match SystemMonitor.max_points
+                self.cpu_data.pop(0)
+                self.ram_data.pop(0)
+                self.disk_data.pop(0)
+                self.time_data.pop(0)
+
+            self.cpu_curve.setData(self.time_data, self.cpu_data)
+            self.ram_curve.setData(self.time_data, self.ram_data)
+            self.disk_curve.setData(self.time_data, self.disk_data)
+        
+    def take_screenshot(self):
+        """Capture a screenshot and save it to a directory."""
+        save_dir = self.load_setting("screenshot_dir", os.path.join(os.environ['USERPROFILE'], 'Pictures', 'Screenshots'))
+        os.makedirs(save_dir, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"screenshot_{timestamp}.png"
+        filepath = os.path.join(save_dir, filename)
+        
+        screenshot = pyautogui.screenshot()
+        screenshot.save(filepath)
+        msg = f"Screenshot saved to {filepath}"
+        self.tools_label.setText(msg)  # Update Tools tab label
+        self.speak(msg)
+        return msg  # For voice command response
 
     def update_label(self, text):
         self.label.setText(text)  # Still works for Home tab; adjust for Chat l
@@ -500,6 +600,42 @@ class DesktopAssistant(QWidget):
              program_name = command[5:].strip()
              return self.start_program_with_confirmation(program_name)
         
+        elif "check system" in command or "system status" in command:
+            if not self.system_monitor.enabled:
+                msg = "System monitoring is disabled. Enable it in the System tab."
+                self.label.setText(msg)
+                return msg, msg
+            cpu_percent = psutil.cpu_percent(interval=None)
+            ram = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            msg = (
+                f"CPU usage is {cpu_percent:.1f}%. "
+                f"RAM usage is {ram.percent:.1f}%, {ram.used / 1024**3:.1f} out of {ram.total / 1024**3:.1f} GB. "
+                f"Disk usage is {disk.percent:.1f}%, {disk.used / 1024**3:.1f} out of {disk.total / 1024**3:.1f} GB."
+            )
+            self.label.setText(msg)
+            return msg, msg
+
+        elif "take a screenshot" in command or "capture screen" in command:
+            msg = self.take_screenshot()
+            return msg, "Screenshot captured."
+        
+        elif "check system" in command or "system status" in command:
+            cpu_percent = psutil.cpu_percent(interval=1)
+            ram = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+            msg = (
+                f"CPU usage is {cpu_percent:.1f}%. "
+                f"RAM usage is {ram.percent:.1f}%, {ram.used / 1024**3:.1f} out of {ram.total / 1024**3:.1f} GB. "
+                f"Disk usage is {disk.percent:.1f}%, {disk.used / 1024**3:.1f} out of {disk.total / 1024**3:.1f} GB."
+            )
+            self.label.setText(msg)  # Show on Home tab for now
+            return msg, msg
+
+        elif "take a screenshot" in command or "capture screen" in command:
+            msg = self.take_screenshot()
+            return msg, "Screenshot captured."
+        
         # Spotify commands
         elif "play song" in command:
             song_name = command.replace("play song", "").strip()
@@ -571,6 +707,11 @@ class DesktopAssistant(QWidget):
 
     def play_song_on_spotify(self, song_name):
         self.spotify_controller.play_song(song_name)
+        
+    def closeEvent(self, event):
+        """Clean up threads on window close."""
+        self.system_monitor.stop()
+        super().closeEvent(event)
 
     
     
@@ -737,6 +878,20 @@ class DesktopAssistant(QWidget):
         # Load the current setting for the reset macro key, with a suitable default if none is set
         self.reset_macro_key_entry.setText(self.load_setting("reset_macro_key", "Ctrl+Alt+R"))
         layout.addWidget(self.reset_macro_key_entry)
+        
+        # Screenshot Directory Setting
+        layout.addWidget(QLabel("Screenshot Save Directory"))
+        self.screenshot_dir_entry = QLineEdit()
+        self.screenshot_dir_entry.setText(self.load_setting("screenshot_dir", os.path.join(os.environ['USERPROFILE'], 'Pictures', 'Screenshots')))
+        layout.addWidget(self.screenshot_dir_entry)
+        
+        # System Monitoring Refresh Interval
+        layout.addWidget(QLabel("System Monitoring Refresh Interval (seconds)"))
+        self.refresh_interval = QComboBox()
+        self.refresh_interval.addItems(["1", "5", "10", "30"])
+        current_interval = self.load_setting("system_refresh_interval", 5)  # Default 5 seconds
+        self.refresh_interval.setCurrentText(str(current_interval))
+        layout.addWidget(self.refresh_interval)
 
 
         # Save Button
@@ -761,11 +916,13 @@ class DesktopAssistant(QWidget):
                     "spotify_redirect_uri": self.spotify_redirect_uri_entry.text(),
                     "asana_token": self.asana_token_entry.text(),
                     "firefox_path": self.firefox_browser_exe_entry.text(),
-                    "weather_api_key": self.weather_api_key_entry.text(),
+                    #"weather_api_key": self.weather_api_key_entry.text(),
                     "geckodriver_path": self.geckodriver_path_entry.text(),
                     "macro_key": self.macro_key_entry.text(),
                     "macro_key_hold": self.macro_key_hold_toggle.isChecked(),
-                    "reset_macro_key": self.reset_macro_key_entry.text()
+                    "reset_macro_key": self.reset_macro_key_entry.text(),
+                    "screenshot_dir": self.screenshot_dir_entry.text(),
+                    "system_refresh_interval": int(self.refresh_interval.currentText()) * 1000  # Convert to milliseconds
                 
                     # Add more settings as needed...
                 }
@@ -793,6 +950,10 @@ class DesktopAssistant(QWidget):
             # Handle case where settings file doesn't exist
             pass
         self.initialize_reset_macro()  # Ensure this is called after settings are loaded
+        
+        # Load system refresh interval
+        interval = self.load_setting("system_refresh_interval", 5000)  # Default 5 seconds in ms
+        self.system_monitor.set_interval(interval)
         
 
     def load_setting(self, key, default_value):
