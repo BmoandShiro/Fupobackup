@@ -737,7 +737,7 @@ class DesktopAssistant(QWidget):
     
 
 
-        def save_settings(self):
+    def save_settings(self):
             # Save the settings to a file
             try:
                 settings = {
@@ -760,7 +760,7 @@ class DesktopAssistant(QWidget):
                 self.load_settings()
                 QMessageBox.information(self, "Success", "Settings saved successfully.")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")
+                QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")    
 
     def open_weather_dashboard(self):
         """Opens the Weather Dashboard window."""
