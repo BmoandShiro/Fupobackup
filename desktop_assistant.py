@@ -32,6 +32,9 @@ from datetime import datetime
 import psutil
 from system_monitor import SystemMonitor
 import pyqtgraph as pg
+from transformers import pipeline
+from openai import OpenAI
+import requests
 
 
 class DesktopAssistant(QWidget):
