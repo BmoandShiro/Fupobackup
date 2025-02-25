@@ -103,7 +103,7 @@ class DesktopAssistant(QWidget):
         self.initialize_key_listener()
         spotify_client_id = self.load_setting("spotify_client_id", "")
         spotify_client_secret = self.load_setting("spotify_client_secret", "")
-        spotify_redirect_uri = self.load_setting("spotify_redirect_uri", "")
+        spotify_redirect_uri = self.load_setting("spotify_redirect_uri", "http://localhost:8080")  # Default to ported URI
         if spotify_client_id and spotify_client_secret and spotify_redirect_uri:
             self.spotify_controller = SpotifyController(spotify_client_id, spotify_client_secret, spotify_redirect_uri)
             print("Spotify controller initialized successfully. Testing authentication...")
@@ -115,6 +115,7 @@ class DesktopAssistant(QWidget):
                     current = self.spotify_controller.sp.current_playback()
                     print(f"Current playback: {current}")
             except Exception as e:
+                logger.error(f"Spotify authentication error: {e}")
                 print(f"Spotify authentication error: {e}")
         else:
             self.spotify_controller = None
@@ -157,6 +158,7 @@ class DesktopAssistant(QWidget):
             self.firefox_browser = webdriver.Firefox(service=self.firefox_service, options=self.firefox_options)
             print("Firefox WebDriver started successfully.")
         except Exception as e:
+            logger.error(f"Failed to start Firefox WebDriver: {e}")
             print(f"Failed to start Firefox WebDriver: {e}")
             
     def configure_dark_theme(self):
@@ -390,6 +392,7 @@ class DesktopAssistant(QWidget):
                     program_name = ' '.join(parts[:-1])  # Combine parts to get the program name
                     installed_programs[program_name.lower()] = ""
         except Exception as e:
+            logger.error(f"Error getting installed programs: {e}")
             print(f"Error getting installed programs: {e}")
         return installed_programs
             
@@ -460,9 +463,11 @@ class DesktopAssistant(QWidget):
             print(f"Task created: {result}")
             return f"Task '{task_name}' created successfully."
         except asana.error.AsanaError as e:
+            logger.error(f"Error creating task: {e}")
             print(f"Error creating task: {e}")
             return f"Error: {e}"
         except Exception as e:
+            logger.error(f"General Error: {e}")
             print(f"General Error: {e}")
             return f"General Error: {e}"
         
@@ -499,6 +504,7 @@ class DesktopAssistant(QWidget):
                     subprocess.Popen(self.executables[app.lower()], shell=True)
                     status_messages.append(f"Started {app.capitalize()}.")
                 except Exception as e:
+                    logger.error(f"Error starting {app.capitalize()}: {e}")
                     status_messages.append(f"Error starting {app.capitalize()}: {e}")
             else:
                 status_messages.append(f"{app.capitalize()} not found in the list of executables.")
@@ -518,8 +524,12 @@ class DesktopAssistant(QWidget):
                 intent = "weather"
             elif any(token.text.lower() in ["start", "launch", "open"] for token in doc):
                 intent = "start_program"
-            elif any(token.text.lower() in ["play", "music", "song", "artist", "album"] for token in doc):
+            elif any(token.text.lower() in ["play", "music", "song", "artist", "album", "playlist", "radio", "daylist"] for token in doc):
                 intent = "play_music"
+            elif any(token.text.lower() in ["like", "favorite"] for token in doc) and "song" in command.lower():
+                intent = "like_song"
+            elif any(token.text.lower() in ["unlike", "remove", "unfavorite"] for token in doc) and "song" in command.lower():
+                intent = "unlike_song"
             elif any(token.text.lower() in ["check", "system", "status"] for token in doc):
                 intent = "check_system"
             elif any(token.text.lower() in ["screenshot", "capture", "screen"] for token in doc):
@@ -527,7 +537,7 @@ class DesktopAssistant(QWidget):
         elif self.nlp_choice == "Transformers" and self.transformers_nlp:
             logger.info(f"Using Transformers for command: {command}")
             candidate_labels = [
-                "weather", "start_program", "play_music", "check_system", "take_screenshot",
+                "weather", "start_program", "play_music", "like_song", "unlike_song", "check_system", "take_screenshot",
                 "unknown"
             ]
             try:
@@ -605,11 +615,25 @@ class DesktopAssistant(QWidget):
             return "Program not specified.", "Program not specified."
 
         elif intent == "play_music":
-            match = re.search(r"play\s+(?:a\s+)?(?:song|artist|album|artist radio)\s+(.+)", command, re.IGNORECASE)
+            match = re.search(r"play\s+(?:a\s+)?(?:song|artist|album|artist radio|playlist|daylist)\s+(.+)", command, re.IGNORECASE)
             if match:
                 name = match.group(1).strip()
                 if self.spotify_controller:
-                    play_result = self.spotify_controller.play_song(name)  # Default to song for simplicity
+                    if "song" in command.lower():
+                        play_result = self.spotify_controller.play_song(name)
+                    elif "artist" in command.lower():
+                        if "radio" in command.lower():
+                            play_result = self.spotify_controller.play_artist_radio(name)
+                        else:
+                            play_result = self.spotify_controller.play_artist(name)
+                    elif "album" in command.lower():
+                        play_result = self.spotify_controller.play_album(name)
+                    elif "playlist" in command.lower():
+                        play_result = self.spotify_controller.play_playlist(name)
+                    elif "daylist" in command.lower():
+                        play_result = self.spotify_controller.play_daylist()
+                    else:
+                        play_result = self.spotify_controller.play_song(name)  # Default to song
                     logger.info(f"Attempting to play: {name}, Result: {play_result}")
                     if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
                         return play_result, play_result
@@ -618,6 +642,20 @@ class DesktopAssistant(QWidget):
                 else:
                     return "Spotify not configured. Check settings.", "Spotify not configured."
             return "Music command unclear.", "Music command unclear."
+
+        elif intent == "like_song":
+            if self.spotify_controller:
+                like_result = self.spotify_controller.like_current_song()
+                logger.info(f"Like song result: {like_result}")
+                return like_result, like_result
+            return "Spotify not configured. Check settings.", "Spotify not configured."
+
+        elif intent == "unlike_song":
+            if self.spotify_controller:
+                unlike_result = self.spotify_controller.unlike_current_song()
+                logger.info(f"Unlike song result: {unlike_result}")
+                return unlike_result, unlike_result
+            return "Spotify not configured. Check settings.", "Spotify not configured."
 
         elif intent == "check_system":
             if not self.system_monitor.enabled:
@@ -785,7 +823,7 @@ class DesktopAssistant(QWidget):
         # Spotify Redirect URI
         layout.addWidget(QLabel("Spotify Redirect URI"))
         self.spotify_redirect_uri_entry = QLineEdit()
-        self.spotify_redirect_uri_entry.setText(self.load_setting("spotify_redirect_uri", ""))
+        self.spotify_redirect_uri_entry.setText(self.load_setting("spotify_redirect_uri", "http://localhost:8080"))  # Default to ported URI
         layout.addWidget(self.spotify_redirect_uri_entry)
 
         # Asana Access Token
@@ -878,7 +916,7 @@ class DesktopAssistant(QWidget):
             settings = {
                 "spotify_client_id": self.spotify_client_id_entry.text(),
                 "spotify_client_secret": self.spotify_client_secret_entry.text(),
-                "spotify_redirect_uri": self.spotify_redirect_uri_entry.text(),
+                "spotify_redirect_uri": self.spotify_redirect_uri_entry.text() or "http://localhost:8080",  # Fallback to default
                 "asana_token": self.asana_token_entry.text(),
                 "firefox_path": self.firefox_browser_exe_entry.text(),
                 "geckodriver_path": self.geckodriver_path_entry.text(),
@@ -905,7 +943,7 @@ class DesktopAssistant(QWidget):
         except ValueError as e:
             QMessageBox.critical(self, "Error", f"Invalid refresh interval: {e}")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")    
+            QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")   
 
     def open_weather_dashboard(self):
         """Opens the Weather Dashboard window."""
