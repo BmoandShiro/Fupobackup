@@ -534,9 +534,9 @@ class DesktopAssistant(QWidget):
                 intent = "pause_playback"
             elif any(token.text.lower() in ["resume", "play"] for token in doc) and "music" in command.lower():
                 intent = "resume_playback"
-            elif any(token.text.lower() in ["skip", "next"] for token in doc):
+            elif any(token.text.lower() in ["skip", "next"] for token in doc):  # Updated to recognize standalone "skip"
                 intent = "skip_track"
-            elif any(token.text.lower() in ["previous", "back"] for token in doc):
+            elif any(token.text.lower() in ["previous", "back"] for token in doc):  # Updated to recognize standalone "previous"
                 intent = "previous_track"
             elif any(token.text.lower() in ["check", "current", "playing"] for token in doc) and "song" in command.lower():
                 intent = "get_current_song"
@@ -630,7 +630,7 @@ class DesktopAssistant(QWidget):
             return "Program not specified.", "Program not specified."
 
         elif intent == "play_music":
-            match = re.search(r"play\s+(?:a\s+)?(?:song|artist|album|artist radio|playlist|daylist|liked song)\s+(.+)", command, re.IGNORECASE)
+            match = re.search(r"play\s+(?:a\s+)?(?:song|artist|album|artist radio|(?:\w+\s+)?radio artist|playlist|daylist|liked song)\s+(.+)", command, re.IGNORECASE)
             if match:
                 name = match.group(1).strip()
                 if self.spotify_controller:
@@ -638,11 +638,16 @@ class DesktopAssistant(QWidget):
                         play_result = self.spotify_controller.play_liked_song(name)
                     elif "song" in command.lower():
                         play_result = self.spotify_controller.play_song(name)
-                    elif "artist" in command.lower():
-                        if "radio" in command.lower():
+                    elif "artist" in command.lower() and "radio" in command.lower():
+                        play_result = self.spotify_controller.play_artist_radio(name)
+                    elif "radio" in command.lower() and "artist" in command.lower():
+                        # Handle "play [artist] radio" format
+                        artist_match = re.search(r"play\s+(\w+)\s+radio", command, re.IGNORECASE)
+                        if artist_match:
+                            name = artist_match.group(1).strip()
                             play_result = self.spotify_controller.play_artist_radio(name)
                         else:
-                            play_result = self.spotify_controller.play_artist(name)
+                            play_result = "Artist not specified in radio command."
                     elif "album" in command.lower():
                         play_result = self.spotify_controller.play_album(name)
                     elif "playlist" in command.lower():
@@ -677,29 +682,25 @@ class DesktopAssistant(QWidget):
             if self.spotify_controller:
                 pause_result = self.spotify_controller.pause_playback()
                 logger.info(f"Pause playback result: {pause_result}")
-                return pause_result, pause_result
-            return "Spotify not configured. Check authentication.", "Spotify not configured."
+                return "", ""  # Silent response for basic playback command
 
         elif intent == "resume_playback":
             if self.spotify_controller:
                 resume_result = self.spotify_controller.resume_playback()
                 logger.info(f"Resume playback result: {resume_result}")
-                return resume_result, resume_result
-            return "Spotify not configured. Check authentication.", "Spotify not configured."
+                return "", ""  # Silent response for basic playback command
 
         elif intent == "skip_track":
             if self.spotify_controller:
                 skip_result = self.spotify_controller.skip_track()
                 logger.info(f"Skip track result: {skip_result}")
-                return skip_result, skip_result
-            return "Spotify not configured. Check authentication.", "Spotify not configured."
+                return "", ""  # Silent response for basic playback command
 
         elif intent == "previous_track":
             if self.spotify_controller:
                 prev_result = self.spotify_controller.previous_track()
                 logger.info(f"Previous track result: {prev_result}")
-                return prev_result, prev_result
-            return "Spotify not configured. Check authentication.", "Spotify not configured."
+                return "", ""  # Silent response for basic playback command
 
         elif intent == "get_current_song":
             if self.spotify_controller:
