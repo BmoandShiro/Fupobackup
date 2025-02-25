@@ -74,8 +74,8 @@ class SpotifyController:
         if results['tracks']['items']:
             track_id = results['tracks']['items'][0]['id']
             self.sp.start_playback(uris=[f'spotify:track:{track_id}'])
-            self.sp.repeat('context')  # Enable repeat to keep playing
-            self.sp.shuffle(True)  # Enable shuffle for variety
+            self.sp.repeat('off')  # Disable repeat for single songs
+            self.sp.shuffle(False)  # Enable shuffle to play related tracks after the song
             return True
         return "Song not found"
     
@@ -87,8 +87,6 @@ class SpotifyController:
         if results['artists']['items']:
             artist_id = results['artists']['items'][0]['id']
             self.sp.start_playback(context_uri=f'spotify:artist:{artist_id}')
-            self.sp.repeat('context')  # Enable repeat for continuous radio
-            self.sp.shuffle(True)  # Enable shuffle for radio-like behavior
             return True
         return "Artist not found"
 
