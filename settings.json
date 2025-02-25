@@ -1,1 +1,17 @@
-{"spotify_client_id": "ea822adc29d84e83ae349312052ed883", "spotify_client_secret": "48f3890441844108a248e7aa0386a004", "spotify_redirect_uri": "http://localhost/", "asana_token": "", "firefox_path": "", "geckodriver_path": "", "macro_key": "F24", "macro_key_hold": false, "reset_macro_key": "F23", "screenshot_dir": "C:\\Users\\BMO\\Pictures\\Screenshots", "system_refresh_interval": 1000}
+{
+    "spotify_client_id": "ea822adc29d84e83ae349312052ed883",
+    "spotify_client_secret": "48f3890441844108a248e7aa0386a004",
+    "spotify_redirect_uri": "http://localhost/",
+    "asana_token": "",
+    "firefox_path": "",
+    "geckodriver_path": "",
+    "macro_key": "F24",
+    "macro_key_hold": false,
+    "reset_macro_key": "F23",
+    "nlp_choice": "Spacy",
+    "ai_choice": "ChatGPT",
+    "openai_api_key": "",
+    "xai_api_key": "",
+    "screenshot_dir": "C:\\Users\\BMO\\Pictures\\Screenshots",
+    "system_refresh_interval": 1000
+}
