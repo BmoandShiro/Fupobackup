@@ -163,3 +163,90 @@ class SpotifyController:
                 self.sp.shuffle(True)
                 return "Playing your Daylist on Spotify"
         return "Daylist not found. Please check your Spotify playlists for a Daylist."
+    
+    @handle_spotify_exceptions
+    def play_liked_song(self, song_name):
+        """Play a song by name from the user's liked tracks."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        results = self.sp.current_user_saved_tracks(limit=50)  # Fetch up to 50 liked tracks at a time
+        found = False
+        while results and not found:
+            for item in results['items']:
+                track = item['track']
+                if song_name.lower() in track['name'].lower():
+                    self.sp.start_playback(uris=[f'spotify:track:{track["id"]}'])
+                    self.sp.repeat('off')  # Disable repeat for single songs
+                    self.sp.shuffle(True)  # Enable shuffle for related tracks
+                    return f"Playing {track['name']} by {track['artists'][0]['name']} from your liked songs"
+            if results['next']:
+                results = self.sp.next(results)  # Paginate to fetch more liked tracks
+            else:
+                break
+        return f"Song '{song_name}' not found in your liked tracks."
+
+    @handle_spotify_exceptions
+    def pause_playback(self):
+        """Pause the current playback."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        self.sp.pause_playback()
+        return "Playback paused."
+
+    @handle_spotify_exceptions
+    def resume_playback(self):
+        """Resume the current playback."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        self.sp.start_playback()
+        return "Playback resumed."
+
+    @handle_spotify_exceptions
+    def skip_track(self):
+        """Skip to the next track."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        self.sp.next_track()
+        return "Skipped to the next track."
+
+    @handle_spotify_exceptions
+    def previous_track(self):
+        """Go back to the previous track."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        self.sp.previous_track()
+        return "Returned to the previous track."
+
+    @handle_spotify_exceptions
+    def get_current_song(self):
+        """Get the name and artist of the currently playing song."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        current_track = self.sp.current_playback()
+        if current_track and current_track['item']:
+            return f"Currently playing: {current_track['item']['name']} by {current_track['item']['artists'][0]['name']}"
+        return "No song is currently playing."
+
+    @handle_spotify_exceptions
+    def toggle_shuffle(self):
+        """Toggle shuffle mode."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        current_state = self.sp.shuffle()['shuffle']
+        self.sp.shuffle(not current_state)
+        return f"Shuffle {'enabled' if not current_state else 'disabled'}."
+
+    @handle_spotify_exceptions
+    def toggle_repeat(self):
+        """Toggle repeat mode (off -> context -> track)."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        current_state = self.sp.repeat()['repeat_state']
+        if current_state == 'off':
+            new_state = 'context'
+        elif current_state == 'context':
+            new_state = 'track'
+        else:  # 'track'
+            new_state = 'off'
+        self.sp.repeat(new_state)
+        return f"Repeat set to {'context' if new_state == 'context' else 'track' if new_state == 'track' else 'off'}."

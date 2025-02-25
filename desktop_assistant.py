@@ -524,12 +524,26 @@ class DesktopAssistant(QWidget):
                 intent = "weather"
             elif any(token.text.lower() in ["start", "launch", "open"] for token in doc):
                 intent = "start_program"
-            elif any(token.text.lower() in ["play", "music", "song", "artist", "album", "playlist", "radio", "daylist"] for token in doc):
+            elif any(token.text.lower() in ["play", "music", "song", "artist", "album", "playlist", "radio", "daylist", "liked"] for token in doc):
                 intent = "play_music"
             elif any(token.text.lower() in ["like", "favorite"] for token in doc) and "song" in command.lower():
                 intent = "like_song"
             elif any(token.text.lower() in ["unlike", "remove", "unfavorite"] for token in doc) and "song" in command.lower():
                 intent = "unlike_song"
+            elif any(token.text.lower() in ["pause"] for token in doc):
+                intent = "pause_playback"
+            elif any(token.text.lower() in ["resume", "play"] for token in doc) and "music" in command.lower():
+                intent = "resume_playback"
+            elif any(token.text.lower() in ["skip", "next"] for token in doc):
+                intent = "skip_track"
+            elif any(token.text.lower() in ["previous", "back"] for token in doc):
+                intent = "previous_track"
+            elif any(token.text.lower() in ["check", "current", "playing"] for token in doc) and "song" in command.lower():
+                intent = "get_current_song"
+            elif any(token.text.lower() in ["toggle", "switch"] for token in doc) and "shuffle" in command.lower():
+                intent = "toggle_shuffle"
+            elif any(token.text.lower() in ["toggle", "switch"] for token in doc) and "repeat" in command.lower():
+                intent = "toggle_repeat"
             elif any(token.text.lower() in ["check", "system", "status"] for token in doc):
                 intent = "check_system"
             elif any(token.text.lower() in ["screenshot", "capture", "screen"] for token in doc):
@@ -537,8 +551,9 @@ class DesktopAssistant(QWidget):
         elif self.nlp_choice == "Transformers" and self.transformers_nlp:
             logger.info(f"Using Transformers for command: {command}")
             candidate_labels = [
-                "weather", "start_program", "play_music", "like_song", "unlike_song", "check_system", "take_screenshot",
-                "unknown"
+                "weather", "start_program", "play_music", "like_song", "unlike_song", "pause_playback", "resume_playback",
+                "skip_track", "previous_track", "get_current_song", "toggle_shuffle", "toggle_repeat", "check_system",
+                "take_screenshot", "unknown"
             ]
             try:
                 result = self.transformers_nlp(command, candidate_labels, multi_label=False)
@@ -615,11 +630,13 @@ class DesktopAssistant(QWidget):
             return "Program not specified.", "Program not specified."
 
         elif intent == "play_music":
-            match = re.search(r"play\s+(?:a\s+)?(?:song|artist|album|artist radio|playlist|daylist)\s+(.+)", command, re.IGNORECASE)
+            match = re.search(r"play\s+(?:a\s+)?(?:song|artist|album|artist radio|playlist|daylist|liked song)\s+(.+)", command, re.IGNORECASE)
             if match:
                 name = match.group(1).strip()
                 if self.spotify_controller:
-                    if "song" in command.lower():
+                    if "song" in command.lower() and "liked" in command.lower():
+                        play_result = self.spotify_controller.play_liked_song(name)
+                    elif "song" in command.lower():
                         play_result = self.spotify_controller.play_song(name)
                     elif "artist" in command.lower():
                         if "radio" in command.lower():
@@ -640,7 +657,7 @@ class DesktopAssistant(QWidget):
                     else:
                         return f"Playing {name} on Spotify", f"Playing {name} on Spotify"
                 else:
-                    return "Spotify not configured. Check settings.", "Spotify not configured."
+                    return "Spotify not configured. Check authentication.", "Spotify not configured."
             return "Music command unclear.", "Music command unclear."
 
         elif intent == "like_song":
@@ -648,14 +665,62 @@ class DesktopAssistant(QWidget):
                 like_result = self.spotify_controller.like_current_song()
                 logger.info(f"Like song result: {like_result}")
                 return like_result, like_result
-            return "Spotify not configured. Check settings.", "Spotify not configured."
+            return "Spotify not configured. Check authentication.", "Spotify not configured."
 
         elif intent == "unlike_song":
             if self.spotify_controller:
                 unlike_result = self.spotify_controller.unlike_current_song()
                 logger.info(f"Unlike song result: {unlike_result}")
                 return unlike_result, unlike_result
-            return "Spotify not configured. Check settings.", "Spotify not configured."
+
+        elif intent == "pause_playback":
+            if self.spotify_controller:
+                pause_result = self.spotify_controller.pause_playback()
+                logger.info(f"Pause playback result: {pause_result}")
+                return pause_result, pause_result
+            return "Spotify not configured. Check authentication.", "Spotify not configured."
+
+        elif intent == "resume_playback":
+            if self.spotify_controller:
+                resume_result = self.spotify_controller.resume_playback()
+                logger.info(f"Resume playback result: {resume_result}")
+                return resume_result, resume_result
+            return "Spotify not configured. Check authentication.", "Spotify not configured."
+
+        elif intent == "skip_track":
+            if self.spotify_controller:
+                skip_result = self.spotify_controller.skip_track()
+                logger.info(f"Skip track result: {skip_result}")
+                return skip_result, skip_result
+            return "Spotify not configured. Check authentication.", "Spotify not configured."
+
+        elif intent == "previous_track":
+            if self.spotify_controller:
+                prev_result = self.spotify_controller.previous_track()
+                logger.info(f"Previous track result: {prev_result}")
+                return prev_result, prev_result
+            return "Spotify not configured. Check authentication.", "Spotify not configured."
+
+        elif intent == "get_current_song":
+            if self.spotify_controller:
+                current_song = self.spotify_controller.get_current_song()
+                logger.info(f"Current song: {current_song}")
+                return current_song, current_song
+            return "Spotify not configured. Check authentication.", "Spotify not configured."
+
+        elif intent == "toggle_shuffle":
+            if self.spotify_controller:
+                shuffle_result = self.spotify_controller.toggle_shuffle()
+                logger.info(f"Toggle shuffle result: {shuffle_result}")
+                return shuffle_result, shuffle_result
+            return "Spotify not configured. Check authentication.", "Spotify not configured."
+
+        elif intent == "toggle_repeat":
+            if self.spotify_controller:
+                repeat_result = self.spotify_controller.toggle_repeat()
+                logger.info(f"Toggle repeat result: {repeat_result}")
+                return repeat_result, repeat_result
+            return "Spotify not configured. Check authentication.", "Spotify not configured."
 
         elif intent == "check_system":
             if not self.system_monitor.enabled:

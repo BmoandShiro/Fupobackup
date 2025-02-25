@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\BMO\\source\\repos\\Fupobackup\\spotify_controller.py||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:spotify_controller.py||{8B382828-6202-11D1-8870-0000F87579D2}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\BMO\\source\\repos\\Fupobackup\\desktop_assistant.py||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:desktop_assistant.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\BMO\\source\\repos\\Fupobackup\\spotify_controller.py||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:spotify_controller.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\BMO\\source\\repos\\Fupobackup\\templates\\map.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
@@ -54,7 +54,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 7,
+          "SelectedChildIndex": 10,
           "Children": [
             {
               "$type": "Bookmark",
@@ -135,13 +135,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "spotify_controller.py",
               "DocumentMoniker": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\spotify_controller.py",
               "RelativeDocumentMoniker": "spotify_controller.py",
               "ToolTip": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\spotify_controller.py",
               "RelativeToolTip": "spotify_controller.py",
-              "ViewState": "AQIAADkAAAAAAAAAAAAzwFEAAAAEAAAA",
+              "ViewState": "AQIAAIgAAAAAAAAAAAAAAKUAAAAEAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-03-12T00:52:00.636Z",
               "EditorCaption": ""
@@ -172,13 +172,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "desktop_assistant.py",
               "DocumentMoniker": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\desktop_assistant.py",
               "RelativeDocumentMoniker": "desktop_assistant.py",
               "ToolTip": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\desktop_assistant.py",
               "RelativeToolTip": "desktop_assistant.py",
-              "ViewState": "AQIAAIgDAAAAAAAAAAAAALEDAABQAAAA",
+              "ViewState": "AQIAAJ0CAAAAAAAAAAAzwAUCAAA0AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-03-12T00:51:58.719Z",
               "EditorCaption": ""
