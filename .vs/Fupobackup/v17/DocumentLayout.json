@@ -83,8 +83,7 @@
               "RelativeToolTip": "Weather_dashboard.py",
               "ViewState": "AQIAAEwAAAAAAAAAAAAAAEwAAABSAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2025-01-31T14:17:18.136Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-31T14:17:18.136Z"
             },
             {
               "$type": "Document",
@@ -96,8 +95,7 @@
               "RelativeToolTip": "templates\\map.html",
               "ViewState": "AQIAAAMAAAAAAAAAAAAAwGYAAAAHAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2025-01-31T12:49:00.616Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-31T12:49:00.616Z"
             },
             {
               "$type": "Document",
@@ -109,8 +107,7 @@
               "RelativeToolTip": "Weather_map.py",
               "ViewState": "AQIAACcAAAAAAAAAAAAywGEAAAAeAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2025-01-31T12:48:23.31Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-31T12:48:23.31Z"
             },
             {
               "$type": "Document",
@@ -122,8 +119,7 @@
               "RelativeToolTip": "nws_alerts.py",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2025-01-30T21:50:01.985Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-30T21:50:01.985Z"
             },
             {
               "$type": "Document",
@@ -135,8 +131,7 @@
               "RelativeToolTip": "README.md",
               "ViewState": "AQIAAFoAAAAAAAAAAAAAAIQAAAAiAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2024-03-14T21:03:04.59Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-03-14T21:03:04.59Z"
             },
             {
               "$type": "Document",
@@ -148,8 +143,7 @@
               "RelativeToolTip": "spotify_controller.py",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAD8AAAAeAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-03-12T00:52:00.636Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-03-12T00:52:00.636Z"
             },
             {
               "$type": "Document",
@@ -161,8 +155,7 @@
               "RelativeToolTip": "firefoxbrowsersearch.py",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAACoAAAAWAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-03-12T00:52:00.038Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-03-12T00:52:00.038Z"
             },
             {
               "$type": "Document",
@@ -174,8 +167,7 @@
               "RelativeToolTip": "audio_ducking.py",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-03-12T00:51:59.386Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-03-12T00:51:59.386Z"
             },
             {
               "$type": "Document",
@@ -185,7 +177,7 @@
               "RelativeDocumentMoniker": "desktop_assistant.py",
               "ToolTip": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\desktop_assistant.py",
               "RelativeToolTip": "desktop_assistant.py",
-              "ViewState": "AQIAAFoAAAAAAAAAAAAAAIEAAAAIAAAA",
+              "ViewState": "AQIAAL0AAAAAAAAAAAAzwIYAAAAbAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-03-12T00:51:58.719Z",
               "EditorCaption": ""
@@ -200,8 +192,7 @@
               "RelativeToolTip": "main.py",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAABUAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-03-12T00:51:41.982Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-03-12T00:51:41.982Z"
             }
           ]
         }
