@@ -500,3 +500,632 @@
 "grab desktop capture",take_screenshot,22
 "take screen shot now",take_screenshot,22
 "capture monitor immediately",take_screenshot,22
+command,intent,labels
+"play song Dancing Queen",play_song,0
+"play song Born to Run",play_song,0
+"play song Imagine Dragons",play_song,0
+"play song Viva La Vida",play_song,0
+"play song Clocks",play_song,0
+"play song Yellow Submarine",play_song,0
+"play song Wonderwall",play_song,0
+"play song Hey Ya!",play_song,0
+"play song Crazy",play_song,0
+"play song Seven Nation Army",play_song,0
+"play song American Pie",play_song,0
+"play song Tiny Dancer",play_song,0
+"play song Hallelujah",play_song,0
+"play song Firework",play_song,0
+"play song Rolling Stone",play_song,0
+"play song Just the Way You Are",play_song,0
+"play song Poker Face",play_song,0
+"play song Single Ladies",play_song,0
+"play song Beat It",play_song,0
+"play song Billie Jean",play_song,0
+"play song Thriller",play_song,0
+"play song odd noise",play_song,0
+"play song weird sound",play_song,0
+"play song strange melody",play_song,0
+"play song funky rhythm",play_song,0
+"play song wild beat",play_song,0
+"play song quirky tune",play_song,0
+"play song silly track",play_song,0
+"play song crazy vibe",play_song,0
+"play song unusual music",play_song,0
+"play artist radio The Rolling Stones",play_radio,1
+"play artist radio David Bowie",play_radio,1
+"play artist radio Beyoncé",play_radio,1
+"play artist radio Taylor Swift",play_radio,1
+"play artist radio Kendrick Lamar",play_radio,1
+"play artist radio Drake",play_radio,1
+"play artist radio Rihanna",play_radio,1
+"play artist radio Bruno Mars",play_radio,1
+"play artist radio Lady Gaga",play_radio,1
+"play artist radio Kanye West",play_radio,1
+"play artist radio Jay-Z",play_radio,1
+"play artist radio Eminem",play_radio,1
+"play artist radio Nicki Minaj",play_radio,1
+"play artist radio Imagine Dragons",play_radio,1
+"play artist radio Twenty One Pilots",play_radio,1
+"play artist radio The Weeknd",play_radio,1
+"play artist radio Billie Eilish",play_radio,1
+"play artist radio Post Malone",play_radio,1
+"play artist radio random singer",play_radio,1
+"play artist radio fake band",play_radio,1
+"play artist radio odd performer",play_radio,1
+"play artist radio wild group",play_radio,1
+"skip right now",skip_track,2
+"move to next tune",skip_track,2
+"jump forward",skip_track,2
+"advance song",skip_track,2
+"next track fast",skip_track,2
+"skip ahead now",skip_track,2
+"move to next music",skip_track,2
+"jump to next song",skip_track,2
+"forward track",skip_track,2
+"next tune please",skip_track,2
+"skip current tune",skip_track,2
+"advance quickly",skip_track,2
+"next song fast",skip_track,2
+"skip forward now",skip_track,2
+"move ahead",skip_track,2
+"jump next",skip_track,2
+"go back fast",previous_track,3
+"return to prior track",previous_track,3
+"move back now",previous_track,3
+"rewind quickly",previous_track,3
+"step back track",previous_track,3
+"back to last song",previous_track,3
+"previous tune now",previous_track,3
+"return fast",previous_track,3
+"rewind music",previous_track,3
+"go back quick",previous_track,3
+"last track now",previous_track,3
+"back song fast",previous_track,3
+"step back quickly",previous_track,3
+"rewind tune",previous_track,3
+"return prior",previous_track,3
+"pause fast",pause_playback,4
+"stop music quick",pause_playback,4
+"hold audio now",pause_playback,4
+"pause track fast",pause_playback,4
+"halt tune",pause_playback,4
+"freeze song now",pause_playback,4
+"pause quickly",pause_playback,4
+"stop audio fast",pause_playback,4
+"hold music now",pause_playback,4
+"pause song quick",pause_playback,4
+"halt track",pause_playback,4
+"freeze music fast",pause_playback,4
+"resume fast",resume_playback,5
+"start playing quick",resume_playback,5
+"continue music now",resume_playback,5
+"unpause audio fast",resume_playback,5
+"resume track now",resume_playback,5
+"start music quick",resume_playback,5
+"play again fast",resume_playback,5
+"continue song now",resume_playback,5
+"unpause music fast",resume_playback,5
+"resume audio now",resume_playback,5
+"start tune quick",resume_playback,5
+"continue playback fast",resume_playback,5
+"unpause track now",resume_playback,5
+"like this tune",like_song,6
+"favorite the track",like_song,6
+"add song to favorites",like_song,6
+"love this music",like_song,6
+"mark track as liked",like_song,6
+"save tune to favorites",like_song,6
+"like current tune",like_song,6
+"favorite this song",like_song,6
+"add music to likes",like_song,6
+"love the track",like_song,6
+"mark song as favorite",like_song,6
+"save music to favorites",like_song,6
+"unlike this tune",unlike_song,7
+"remove song from favorites",unlike_song,7
+"unfavorite the track",unlike_song,7
+"dislike this music",unlike_song,7
+"take tune off likes",unlike_song,7
+"remove track from saved",unlike_song,7
+"unlike current tune",unlike_song,7
+"remove from favorites now",unlike_song,7
+"unfavorite this song",unlike_song,7
+"dislike the track",unlike_song,7
+"check playing tune",get_current_song,8
+"what's the current music",get_current_song,8
+"show me playing track",get_current_song,8
+"what tune is on",get_current_song,8
+"tell me what's playing now",get_current_song,8
+"display current tune",get_current_song,8
+"check the music now",get_current_song,8
+"what's the playing track",get_current_song,8
+"show current music",get_current_song,8
+"tell me current tune",get_current_song,8
+"toggle shuffle fast",toggle_shuffle,9
+"switch shuffle now",toggle_shuffle,9
+"turn shuffle quick",toggle_shuffle,9
+"flip random play",toggle_shuffle,9
+"change random mode",toggle_shuffle,9
+"toggle repeat fast",toggle_repeat,10
+"switch repeat now",toggle_repeat,10
+"turn repeat quick",toggle_repeat,10
+"flip loop play",toggle_repeat,10
+"change loop mode",toggle_repeat,10
+"create a playlist called Night Drive",create_playlist,11
+"make a new playlist named Evening Jams",create_playlist,11
+"start a playlist called Morning Beats",create_playlist,11
+"build a playlist named Afternoon Vibes",create_playlist,11
+"set up playlist Sunset Tunes",create_playlist,11
+"generate playlist Midnight Mix",create_playlist,11
+"add this tune to my Top Tracks playlist",add_to_playlist,12
+"put this song in my Best Hits list",add_to_playlist,12
+"include this track in my Favorite Songs",add_to_playlist,12
+"add music to my Chill Playlist",add_to_playlist,12
+"place tune in my Party Mix",add_to_playlist,12
+"insert track into my Relax List",add_to_playlist,12
+"delete playlist Night Drive",delete_playlist,13
+"remove playlist Evening Jams",delete_playlist,13
+"erase playlist Morning Beats",delete_playlist,13
+"delete Afternoon Vibes playlist",delete_playlist,13
+"remove the Sunset Tunes list",delete_playlist,13
+"erase my Midnight Mix playlist",delete_playlist,13
+"set Spotify volume to 65%",set_volume,14
+"adjust Spotify volume to 35 percent",set_volume,14
+"change Spotify volume to 85%",set_volume,14
+"fix Spotify volume at 55%",set_volume,14
+"increase Spotify volume by 15%",increase_volume,15
+"raise Spotify volume quick",increase_volume,15
+"make Spotify louder now",increase_volume,15
+"boost audio up fast",increase_volume,15
+"turn up music volume now",increase_volume,15
+"decrease Spotify volume by 15%",decrease_volume,16
+"lower Spotify volume quick",decrease_volume,16
+"make Spotify quieter now",decrease_volume,16
+"reduce audio down fast",decrease_volume,16
+"turn down music volume now",decrease_volume,16
+"recommend songs like Dancing Queen",get_recommendations,17
+"find tracks similar to Born to Run",get_recommendations,17
+"suggest music like Imagine Dragons",get_recommendations,17
+"recommend tunes like Viva La Vida",get_recommendations,17
+"play music for 35 minutes then pause",timed_playback,18
+"listen to tunes for 40 minutes then stop",timed_playback,18
+"stream audio for 25 minutes then quit",timed_playback,18
+"weather new york",weather,19
+"what's the weather in chicago",weather,19
+"check the weather forecast for los angeles",weather,19
+"tell me the current weather in miami",weather,19
+"show today's weather for seattle",weather,19
+"start explorer",start_program,20
+"open terminal",start_program,20
+"launch calculator",start_program,20
+"run paint",start_program,20
+"check system details",check_system,21
+"show resource usage",check_system,21
+"view memory stats",check_system,21
+"take screen capture",take_screenshot,22
+"grab desktop shot",take_screenshot,22
+"snap monitor now",take_screenshot,22
+command,intent,labels
+"play song Stayin' Alive",play_song,0
+"play song Wish You Were Here",play_song,0
+"play song Sweet Home Alabama",play_song,0
+"play song Free Bird",play_song,0
+"play song Blackbird",play_song,0
+"play song Come Together",play_song,0
+"play song With or Without You",play_song,0
+"play song Time After Time",play_song,0
+"play song Total Eclipse of the Heart",play_song,0
+"play song I Wanna Dance with Somebody",play_song,0
+"play song Man in the Mirror",play_song,0
+"play song Smooth Criminal",play_song,0
+"play song Careless Whisper",play_song,0
+"play song Faith",play_song,0
+"play song Every Little Thing She Does",play_song,0
+"play song I Want to Know What Love Is",play_song,0
+"play song Don’t You Want Me",play_song,0
+"play song Tainted Love",play_song,0
+"play song Just Can’t Get Enough",play_song,0
+"play song Don’t You Forget About Me",play_song,0
+"play song unique sound",play_song,0
+"play song bizarre beat",play_song,0
+"play song quirky rhythm",play_song,0
+"play song odd harmony",play_song,0
+"play song strange vibe",play_song,0
+"play song wild note",play_song,0
+"play song funky chord",play_song,0
+"play song silly melody",play_song,0
+"play song crazy tune",play_song,0
+"play song weird music",play_song,0
+"play artist radio Aerosmith",play_radio,1
+"play artist radio The Doors",play_radio,1
+"play artist radio Fleetwood Mac",play_radio,1
+"play artist radio The Who",play_radio,1
+"play artist radio Jimi Hendrix",play_radio,1
+"play artist radio Janis Joplin",play_radio,1
+"play artist radio Stevie Nicks",play_radio,1
+"play artist radio Eric Clapton",play_radio,1
+"play artist radio Bob Marley",play_radio,1
+"play artist radio Johnny Cash",play_radio,1
+"play artist radio Willie Nelson",play_radio,1
+"play artist radio Ray Charles",play_radio,1
+"play artist radio Aretha Franklin",play_radio,1
+"play artist radio Otis Redding",play_radio,1
+"play artist radio Sam Cooke",play_radio,1
+"play artist radio James Brown",play_radio,1
+"play artist radio Marvin Gaye",play_radio,1
+"play artist radio Stevie Wonder",play_radio,1
+"play artist radio unknown artist",play_radio,1
+"play artist radio rare band",play_radio,1
+"play artist radio odd singer",play_radio,1
+"skip forward fast",skip_track,2
+"move to next beat",skip_track,2
+"jump to next tune",skip_track,2
+"advance track now",skip_track,2
+"next song quick",skip_track,2
+"skip ahead fast",skip_track,2
+"move to next rhythm",skip_track,2
+"jump forward quick",skip_track,2
+"forward tune",skip_track,2
+"next track now",skip_track,2
+"skip beat",skip_track,2
+"advance song fast",skip_track,2
+"go back slow",previous_track,3
+"return to last tune",previous_track,3
+"move back fast",previous_track,3
+"rewind quick now",previous_track,3
+"step back beat",previous_track,3
+"back to prior song",previous_track,3
+"previous rhythm now",previous_track,3
+"return fast now",previous_track,3
+"rewind music quick",previous_track,3
+"go back slow now",previous_track,3
+"pause slow",pause_playback,4
+"stop tune quick",pause_playback,4
+"hold audio fast",pause_playback,4
+"pause beat now",pause_playback,4
+"halt rhythm",pause_playback,4
+"freeze song fast",pause_playback,4
+"pause slow now",pause_playback,4
+"stop music fast",pause_playback,4
+"hold tune now",pause_playback,4
+"resume slow",resume_playback,5
+"start playing fast",resume_playback,5
+"continue tune now",resume_playback,5
+"unpause beat fast",resume_playback,5
+"resume rhythm now",resume_playback,5
+"start music fast",resume_playback,5
+"play again slow",resume_playback,5
+"continue beat now",resume_playback,5
+"unpause tune fast",resume_playback,5
+"resume song now",resume_playback,5
+"start rhythm fast",resume_playback,5
+"continue music slow",resume_playback,5
+"unpause music now",resume_playback,5
+"like this beat",like_song,6
+"favorite the tune",like_song,6
+"add song to my favorites",like_song,6
+"love this rhythm",like_song,6
+"mark track as favorite",like_song,6
+"save beat to likes",like_song,6
+"like current beat",like_song,6
+"favorite this tune",like_song,6
+"add rhythm to favorites",like_song,6
+"love the song",like_song,6
+"mark beat as liked",like_song,6
+"save tune to favorites",like_song,6
+"like it fast",like_song,6
+"favorite this rhythm",like_song,6
+"add to my beats",like_song,6
+"love current tune",like_song,6
+"mark as favorite now",like_song,6
+"save to likes fast",like_song,6
+"like this song now",like_song,6
+"favorite beat",like_song,6
+"love the rhythm",like_song,6
+"save tune now",like_song,6
+"mark liked",like_song,6
+"unlike this beat",unlike_song,7
+"remove tune from favorites",unlike_song,7
+"unfavorite the rhythm",unlike_song,7
+"dislike this song",unlike_song,7
+"take beat off likes",unlike_song,7
+"remove track from saved",unlike_song,7
+"unlike current tune",unlike_song,7
+"remove from favorites now",unlike_song,7
+"unfavorite this rhythm",unlike_song,7
+"dislike the beat",unlike_song,7
+"take off likes fast",unlike_song,7
+"remove saved tune",unlike_song,7
+"unlike now",unlike_song,7
+"remove from beats",unlike_song,7
+"unfavorite song",unlike_song,7
+"dislike current rhythm",unlike_song,7
+"take off favorites now",unlike_song,7
+"remove this tune",unlike_song,7
+"check playing beat",get_current_song,8
+"what's the current rhythm",get_current_song,8
+"show me playing tune",get_current_song,8
+"what song is on now",get_current_song,8
+"tell me what's playing fast",get_current_song,8
+"display current beat",get_current_song,8
+"check the tune now",get_current_song,8
+"what's the playing rhythm",get_current_song,8
+"show current song fast",get_current_song,8
+"tell me current beat",get_current_song,8
+"toggle shuffle slow",toggle_shuffle,9
+"switch shuffle fast",toggle_shuffle,9
+"turn shuffle now",toggle_shuffle,9
+"flip random tune",toggle_shuffle,9
+"change random beat",toggle_shuffle,9
+"toggle repeat slow",toggle_repeat,10
+"switch repeat fast",toggle_repeat,10
+"turn repeat now",toggle_repeat,10
+"flip loop tune",toggle_repeat,10
+"change loop beat",toggle_repeat,10
+"create a playlist called Starlight",create_playlist,11
+"make a new playlist named Twilight",create_playlist,11
+"start a playlist called Dawn",create_playlist,11
+"build a playlist named Dusk",create_playlist,11
+"set up playlist Moonlight",create_playlist,11
+"generate playlist Sunrise",create_playlist,11
+"add this beat to my Star Hits playlist",add_to_playlist,12
+"put this tune in my Twilight Tracks",add_to_playlist,12
+"include this rhythm in my Dawn List",add_to_playlist,12
+"add song to my Dusk Mix",add_to_playlist,12
+"place tune in my Moonlight Beats",add_to_playlist,12
+"insert track into my Sunrise Vibes",add_to_playlist,12
+"delete playlist Starlight",delete_playlist,13
+"remove playlist Twilight",delete_playlist,13
+"erase playlist Dawn",delete_playlist,13
+"delete Dusk playlist",delete_playlist,13
+"remove the Moonlight list",delete_playlist,13
+"erase my Sunrise playlist",delete_playlist,13
+"set Spotify volume to 40%",set_volume,14
+"adjust Spotify volume to 70 percent",set_volume,14
+"change Spotify volume to 30%",set_volume,14
+"fix Spotify volume at 90%",set_volume,14
+"increase Spotify volume by 25%",increase_volume,15
+"raise Spotify volume now",increase_volume,15
+"make Spotify louder fast",increase_volume,15
+"boost audio up quick",increase_volume,15
+"turn up music volume fast",increase_volume,15
+"decrease Spotify volume by 25%",decrease_volume,16
+"lower Spotify volume now",decrease_volume,16
+"make Spotify quieter fast",decrease_volume,16
+"reduce audio down quick",decrease_volume,16
+"turn down music volume fast",decrease_volume,16
+"recommend songs like Stayin' Alive",get_recommendations,17
+"find tracks similar to Wish You Were Here",get_recommendations,17
+"suggest music like Sweet Home Alabama",get_recommendations,17
+"recommend tunes like Free Bird",get_recommendations,17
+"play music for 20 minutes then pause",timed_playback,18
+"listen to tunes for 50 minutes then stop",timed_playback,18
+"stream audio for 15 minutes then quit",timed_playback,18
+"weather boston",weather,19
+"what's the weather in phoenix",weather,19
+"check the weather forecast for denver",weather,19
+"tell me the current weather in atlanta",weather,19
+"show today's weather for portland",weather,19
+"start safari",start_program,20
+"open gimp",start_program,20
+"launch audacity",start_program,20
+"run blender",start_program,20
+"check system load",check_system,21
+"show memory usage",check_system,21
+"view cpu stats",check_system,21
+"take screen grab",take_screenshot,22
+"capture desktop now",take_screenshot,22
+"snap monitor fast",take_screenshot,22
+"grab screen shot",take_screenshot,22
+"capture display fast",take_screenshot,22
+"snap desktop quick",take_screenshot,22
+"take monitor capture",take_screenshot,22
+command,intent,labels
+"play song Good Vibrations",play_song,0
+"play song California Dreamin'",play_song,0
+"play song Waterloo",play_song,0
+"play song I Feel Good",play_song,0
+"play song Respect",play_song,0
+"play song Stand by Me",play_song,0
+"play song My Girl",play_song,0
+"play song Ain't No Sunshine",play_song,0
+"play song Let's Stay Together",play_song,0
+"play song Superstition",play_song,0
+"play song I Wish",play_song,0
+"play song September",play_song,0
+"play song Le Freak",play_song,0
+"play song Y.M.C.A.",play_song,0
+"play song Celebration",play_song,0
+"play song Upside Down",play_song,0
+"play song Funkytown",play_song,0
+"play song You Make My Dreams",play_song,0
+"play song mysterious sound",play_song,0
+"play song eerie beat",play_song,0
+"play song peculiar tune",play_song,0
+"play song rare rhythm",play_song,0
+"play song exotic vibe",play_song,0
+"play song unusual chord",play_song,0
+"play song quirky note",play_song,0
+"play song odd track",play_song,0
+"play song wild melody",play_song,0
+"play artist radio The Cure",play_radio,1
+"play artist radio Depeche Mode",play_radio,1
+"play artist radio The Smiths",play_radio,1
+"play artist radio New Order",play_radio,1
+"play artist radio Joy Division",play_radio,1
+"play artist radio The Clash",play_radio,1
+"play artist radio Ramones",play_radio,1
+"play artist radio Sex Pistols",play_radio,1
+"play artist radio Blondie",play_radio,1
+"play artist radio Talking Heads",play_radio,1
+"play artist radio Patti Smith",play_radio,1
+"play artist radio Iggy Pop",play_radio,1
+"play artist radio David Byrne",play_radio,1
+"play artist radio Siouxsie Sioux",play_radio,1
+"play artist radio Bauhaus",play_radio,1
+"play artist radio The Pretenders",play_radio,1
+"play artist radio strange performer",play_radio,1
+"play artist radio rare group",play_radio,1
+"play artist radio unique singer",play_radio,1
+"skip back",skip_track,2
+"move to next rhythm",skip_track,2
+"jump to next beat",skip_track,2
+"advance tune now",skip_track,2
+"next song fast",skip_track,2
+"skip forward quick",skip_track,2
+"move to next track",skip_track,2
+"jump ahead fast",skip_track,2
+"forward music",skip_track,2
+"next tune now",skip_track,2
+"skip rhythm",skip_track,2
+"advance beat fast",skip_track,2
+"go forward slow",previous_track,3
+"return to prior tune",previous_track,3
+"move back quick",previous_track,3
+"rewind fast now",previous_track,3
+"step back rhythm",previous_track,3
+"back to last beat",previous_track,3
+"previous track quick",previous_track,3
+"return fast now",previous_track,3
+"rewind tune quick",previous_track,3
+"go back fast now",previous_track,3
+"pause fast now",pause_playback,4
+"stop tune quick",pause_playback,4
+"hold beat now",pause_playback,4
+"pause rhythm fast",pause_playback,4
+"halt music",pause_playback,4
+"freeze track now",pause_playback,4
+"pause quick now",pause_playback,4
+"stop beat fast",pause_playback,4
+"hold rhythm now",pause_playback,4
+"resume slow now",resume_playback,5
+"start playing fast now",resume_playback,5
+"continue beat now",resume_playback,5
+"unpause tune fast",resume_playback,5
+"resume music now",resume_playback,5
+"start rhythm fast",resume_playback,5
+"play again slow now",resume_playback,5
+"continue tune now",resume_playback,5
+"unpause beat fast",resume_playback,5
+"resume track fast",resume_playback,5
+"start music now",resume_playback,5
+"continue rhythm slow",resume_playback,5
+"unpause music fast",resume_playback,5
+"like this rhythm",like_song,6
+"favorite the beat",like_song,6
+"add tune to my favorites",like_song,6
+"love this track",like_song,6
+"mark rhythm as favorite",like_song,6
+"save beat to likes",like_song,6
+"like current rhythm",like_song,6
+"favorite this beat",like_song,6
+"add tune to favorites",like_song,6
+"love the music",like_song,6
+"mark beat as liked",like_song,6
+"save rhythm to favorites",like_song,6
+"like it quick",like_song,6
+"favorite this tune",like_song,6
+"add to my rhythms",like_song,6
+"love current beat",like_song,6
+"mark as favorite now",like_song,6
+"save to likes quick",like_song,6
+"like this music now",like_song,6
+"favorite rhythm",like_song,6
+"love the tune",like_song,6
+"save beat now",like_song,6
+"mark liked now",like_song,6
+"unlike this rhythm",unlike_song,7
+"remove tune from favorites",unlike_song,7
+"unfavorite the beat",unlike_song,7
+"dislike this track",unlike_song,7
+"take rhythm off likes",unlike_song,7
+"remove beat from saved",unlike_song,7
+"unlike current tune",unlike_song,7
+"remove from favorites quick",unlike_song,7
+"unfavorite this beat",unlike_song,7
+"dislike the rhythm",unlike_song,7
+"take off likes now",unlike_song,7
+"remove saved music",unlike_song,7
+"unlike quick",unlike_song,7
+"remove from beats",unlike_song,7
+"unfavorite track",unlike_song,7
+"dislike current tune",unlike_song,7
+"take off favorites quick",unlike_song,7
+"remove this rhythm",unlike_song,7
+"check playing tune",get_current_song,8
+"what's the current beat",get_current_song,8
+"show me playing rhythm",get_current_song,8
+"what music is on",get_current_song,8
+"tell me what's playing now",get_current_song,8
+"display current track",get_current_song,8
+"check the rhythm now",get_current_song,8
+"what's the playing tune",get_current_song,8
+"show current beat",get_current_song,8
+"tell me current music",get_current_song,8
+"toggle shuffle quick",toggle_shuffle,9
+"switch shuffle now",toggle_shuffle,9
+"turn shuffle fast",toggle_shuffle,9
+"flip random beat",toggle_shuffle,9
+"change random tune",toggle_shuffle,9
+"toggle repeat quick",toggle_repeat,10
+"switch repeat now",toggle_repeat,10
+"turn repeat fast",toggle_repeat,10
+"flip loop beat",toggle_repeat,10
+"change loop tune",toggle_repeat,10
+"create a playlist called Horizon",create_playlist,11
+"make a new playlist named Zenith",create_playlist,11
+"start a playlist called Eclipse",create_playlist,11
+"build a playlist named Aurora",create_playlist,11
+"set up playlist Galaxy",create_playlist,11
+"generate playlist Nebula",create_playlist,11
+"add this rhythm to my Horizon Hits",add_to_playlist,12
+"put this beat in my Zenith Tracks",add_to_playlist,12
+"include this tune in my Eclipse List",add_to_playlist,12
+"add song to my Aurora Mix",add_to_playlist,12
+"place track in my Galaxy Beats",add_to_playlist,12
+"insert music into my Nebula Vibes",add_to_playlist,12
+"delete playlist Horizon",delete_playlist,13
+"remove playlist Zenith",delete_playlist,13
+"erase playlist Eclipse",delete_playlist,13
+"delete Aurora playlist",delete_playlist,13
+"remove the Galaxy list",delete_playlist,13
+"erase my Nebula playlist",delete_playlist,13
+"set Spotify volume to 55%",set_volume,14
+"adjust Spotify volume to 45 percent",set_volume,14
+"change Spotify volume to 75%",set_volume,14
+"fix Spotify volume at 35%",set_volume,14
+"increase Spotify volume by 30%",increase_volume,15
+"raise Spotify volume fast",increase_volume,15
+"make Spotify louder now",increase_volume,15
+"boost audio up quick",increase_volume,15
+"turn up music volume fast",increase_volume,15
+"decrease Spotify volume by 30%",decrease_volume,16
+"lower Spotify volume fast",decrease_volume,16
+"make Spotify quieter now",decrease_volume,16
+"reduce audio down quick",decrease_volume,16
+"turn down music volume fast",decrease_volume,16
+"recommend songs like Good Vibrations",get_recommendations,17
+"find tracks similar to California Dreamin'",get_recommendations,17
+"suggest music like Waterloo",get_recommendations,17
+"recommend tunes like I Feel Good",get_recommendations,17
+"play music for 45 minutes then quit",timed_playback,18
+"listen to tunes for 30 minutes then pause",timed_playback,18
+"stream audio for 60 minutes then stop",timed_playback,18
+"weather san francisco",weather,19
+"what's the weather in dallas",weather,19
+"check the weather forecast for houston",weather,19
+"tell me the current weather in san diego",weather,19
+"show today's weather for austin",weather,19
+"start opera",start_program,20
+"open thunderbird",start_program,20
+"launch libreoffice",start_program,20
+"run inkscape",start_program,20
+"check system health",check_system,21
+"show disk usage",check_system,21
+"view network stats",check_system,21
+"take desktop grab",take_screenshot,22
+"capture monitor now",take_screenshot,22
+"snap screen fast",take_screenshot,22
+"grab display shot",take_screenshot,22
+"capture desktop fast",take_screenshot,22
+"snap monitor quick",take_screenshot,22

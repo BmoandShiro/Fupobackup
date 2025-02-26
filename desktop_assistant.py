@@ -31,7 +31,7 @@ from datetime import datetime
 import psutil
 from system_monitor import SystemMonitor
 import pyqtgraph as pg
-from transformers import pipeline, BartForSequenceClassification, BartTokenizer
+from transformers import pipeline, BartForSequenceClassification, BartTokenizer, DistilBertTokenizer, DistilBertForSequenceClassification
 import torch
 from openai import OpenAI
 import requests
@@ -66,84 +66,77 @@ class DesktopAssistant(QWidget):
             keyboard.add_hotkey(macro_key, self.listen_and_respond)
         
     def __init__(self, window):
-        super().__init__()  # Initialize the parent QWidget class
+        super().__init__()
         self.window = window
         self.configure_dark_theme()
-        
-        # Start system monitoring thread with default 5-second interval
-        self.system_monitor = SystemMonitor(interval=5000)  # 5 seconds in milliseconds
+
+        self.system_monitor = SystemMonitor(interval=5000)
         self.system_monitor.stats_updated.connect(self.update_system_stats)
         self.system_monitor.start()
-        
-        # Connect the signal to the slot
+
         self.confirmationSignal.connect(self.confirm_start_program)
-        self.updateLabelSignal.connect(self.update_label)  # Add this line
-        
-        # Audio ducking
-        self.init_volume_control()  # Initialize volume control at the start
-        self.audio_ducking_enabled = False  # Replaces the tk.BooleanVar()
+        self.updateLabelSignal.connect(self.update_label)
+
+        self.init_volume_control()
+        self.audio_ducking_enabled = False
         self.ducking_thread = None
         self.ducking_stop_event = threading.Event()
-        
+
         self.load_settings()
         asana_token = self.load_setting("asana_token", "")
-        if asana_token:
-            self.client = asana.Client.access_token(asana_token)
-        else:
-            # Handle case where Asana token is not set
-            self.client = None  # Or some other default behavior
+        self.client = asana.Client.access_token(asana_token) if asana_token else None
 
-        self.executables = DesktopAssistant.load_executables()  # Use class name for static method
+        self.executables = DesktopAssistant.load_executables()
         self.desktop_shortcuts = self.find_shortcuts(os.path.join(os.environ['USERPROFILE'], 'Desktop'))
         self.create_widgets()
-        self.nlp_choice = self.load_setting("nlp_choice", "Transformers")  # Default to Transformers
+        self.nlp_choice = self.load_setting("nlp_choice", "Transformers")
         self.spacy_nlp = spacy.load("en_core_web_sm") if self.nlp_choice == "Spacy" else None
-        self.transformers_nlp = pipeline("zero-shot-classification", model="./bart_finetuned", tokenizer="./bart_finetuned", device=0 if torch.cuda.is_available() else -1) if self.nlp_choice == "Transformers" else None
+        self.transformers_model = None
+        self.transformers_tokenizer = None
+        if self.nlp_choice == "Transformers":
+            try:
+                model_path = "./distilbert_finetuned"
+                self.transformers_tokenizer = DistilBertTokenizer.from_pretrained(model_path)
+                self.transformers_model = DistilBertForSequenceClassification.from_pretrained(model_path).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+                logger.info("Transformers model initialized with fine-tuned distilbert-base-uncased on GPU/CPU")
+            except Exception as e:
+                logger.error(f"Failed to initialize Transformers: {e}")
+                self.nlp_choice = "Spacy"
+                self.spacy_nlp = spacy.load("en_core_web_sm")
+                self.transformers_model = None
+                self.transformers_tokenizer = None
+
         self.mic = sr.Microphone(device_index=1)
         self.initialize_key_listener()
         spotify_client_id = self.load_setting("spotify_client_id", "")
         spotify_client_secret = self.load_setting("spotify_client_secret", "")
-        spotify_redirect_uri = self.load_setting("spotify_redirect_uri", "http://localhost:8080")  # Default to ported URI
-        if spotify_client_id and spotify_client_secret and spotify_redirect_uri:
-            self.spotify_controller = SpotifyController(spotify_client_id, spotify_client_secret, spotify_redirect_uri)
-            print("Spotify controller initialized successfully. Testing authentication...")
+        spotify_redirect_uri = self.load_setting("spotify_redirect_uri", "http://localhost:8080")
+        self.spotify_controller = SpotifyController(spotify_client_id, spotify_client_secret, spotify_redirect_uri) if all([spotify_client_id, spotify_client_secret, spotify_redirect_uri]) else None
+        if self.spotify_controller:
             try:
-                # Test authentication by getting user info or current playback
-                if self.spotify_controller:
-                    user = self.spotify_controller.sp.current_user()
-                    print(f"Authenticated as: {user['display_name']}")
-                    current = self.spotify_controller.sp.current_playback()
-                    print(f"Current playback: {current}")
+                user = self.spotify_controller.sp.current_user()
+                logger.info(f"Authenticated as: {user['display_name']}")
+                current = self.spotify_controller.sp.current_playback()
+                logger.info(f"Current playback: {current}")
             except Exception as e:
                 logger.error(f"Spotify authentication error: {e}")
-                print(f"Spotify authentication error: {e}")
-        else:
-            self.spotify_controller = None
-            print("Spotify settings not configured. Spotify commands will not work.")
         self.create_settings_menu()
-        
-        # Initialize the browser settings for Firefox
+
         self.firefox_service = FirefoxService(executable_path=self.load_setting("geckodriver_path", "path_to_geckodriver"))
         self.firefox_options = webdriver.FirefoxOptions()
         self.firefox_options.binary_location = self.load_setting("firefox_path", "path_to_firefox")
-
-        # Now create a method to start Firefox with these settings
-        # Initialize FirefoxBrowserSearch but do not start the browser
         self.firefox_search = FirefoxBrowserSearch("settings.json")
-
-        # Weather
         self.weather_api = WeatherAPI()
-        
-        # Initialize plot data
+
         self.cpu_data = []
         self.ram_data = []
         self.disk_data = []
         self.time_data = []
 
-        # Initialize AI clients
         self.ai_choice = self.load_setting("ai_choice", "ChatGPT")
         self.openai_client = OpenAI(api_key=self.load_setting("openai_api_key", "")) if self.load_setting("openai_api_key", "") else None
         self.xai_api_key = self.load_setting("xai_api_key", "")
+        self.misclassifications_file = "misclassifications.log"
 
     def start_firefox_browser(self):
         # This method starts the Firefox browser with the specified options and service
@@ -493,6 +486,14 @@ class DesktopAssistant(QWidget):
             self.start_program(best_match)
         else:
             self.updateLabelSignal.emit("Operation cancelled by user.")
+            
+    def extract_entities(self, command):
+        doc = self.spacy_nlp(command) if self.spacy_nlp else None
+        if doc:
+            song = next((ent.text for ent in doc.ents if ent.label_ == "WORK_OF_ART"), None)
+            location = next((ent.text for ent in doc.ents if ent.label_ == "GPE"), None)
+            return {"song": song, "location": location}
+        return {"song": None, "location": None}
 
     def start_essential_apps(self):
         essential_apps = ["discord", "signal", "opera gx browser", "lorexcloud"]
@@ -515,97 +516,139 @@ class DesktopAssistant(QWidget):
         if not command.strip():
             return "No command provided.", "No command provided."
 
-        # Use selected NLP for intent classification
-        if self.nlp_choice == "Spacy" and self.spacy_nlp:
-            doc = self.spacy_nlp(command)
-            # Simple Spacy-based intent detection (rule-based)
-            intent = "unknown"
-            if any(token.text.lower() in ["weather", "forecast", "alerts"] for token in doc):
-                intent = "weather"
-            elif any(token.text.lower() in ["start", "launch", "open"] for token in doc):
-                intent = "start_program"
-            elif any(token.text.lower() in ["play"] for token in doc) and "song" in command.lower() and "liked" in command.lower():
-                intent = "play_liked_song"
-            elif any(token.text.lower() in ["play"] for token in doc) and "song" in command.lower():
-                intent = "play_song"
-            elif any(token.text.lower() in ["play"] for token in doc) and ("artist radio" in command.lower() or "radio artist" in command.lower()):
-                intent = "play_radio"
-            elif any(token.text.lower() in ["play"] for token in doc) and "artist" in command.lower() and not "radio" in command.lower():
-                intent = "play_artist"
-            elif any(token.text.lower() in ["play"] for token in doc) and "album" in command.lower():
-                intent = "play_album"
-            elif any(token.text.lower() in ["play"] for token in doc) and "playlist" in command.lower():
-                intent = "play_playlist"
-            elif any(token.text.lower() in ["play"] for token in doc) and "daylist" in command.lower():
-                intent = "play_daylist"
-            elif any(token.text.lower() in ["like", "favorite"] for token in doc) and "song" in command.lower():
-                intent = "like_song"
-            elif any(token.text.lower() in ["unlike", "remove", "unfavorite"] for token in doc) and "song" in command.lower():
-                intent = "unlike_song"
-            elif any(token.text.lower() in ["pause"] for token in doc):
-                intent = "pause_playback"
-            elif any(token.text.lower() in ["resume", "play"] for token in doc) and "music" in command.lower():
-                intent = "resume_playback"
-            elif any(token.text.lower() in ["skip", "next"] for token in doc):
-                intent = "skip_track"
-            elif any(token.text.lower() in ["previous", "back"] for token in doc):
-                intent = "previous_track"
-            elif any(token.text.lower() in ["check", "current", "playing"] for token in doc) and "song" in command.lower():
-                intent = "get_current_song"
-            elif any(token.text.lower() in ["toggle", "switch"] for token in doc) and "shuffle" in command.lower():
-                intent = "toggle_shuffle"
-            elif any(token.text.lower() in ["toggle", "switch"] for token in doc) and "repeat" in command.lower():
-                intent = "toggle_repeat"
-            elif any(token.text.lower() in ["create"] for token in doc) and "playlist" in command.lower():
-                intent = "create_playlist"
-            elif any(token.text.lower() in ["add"] for token in doc) and "playlist" in command.lower():
-                intent = "add_to_playlist"
-            elif any(token.text.lower() in ["delete"] for token in doc) and "playlist" in command.lower():
-                intent = "delete_playlist"
-            elif any(token.text.lower() in ["set", "adjust"] for token in doc) and "volume" in command.lower():
-                intent = "set_volume"
-            elif any(token.text.lower() in ["increase"] for token in doc) and "volume" in command.lower():
-                intent = "increase_volume"
-            elif any(token.text.lower() in ["decrease"] for token in doc) and "volume" in command.lower():
-                intent = "decrease_volume"
-            elif any(token.text.lower() in ["recommend", "find"] for token in doc) and any(kw in command.lower() for kw in ["song", "artist", "genre"]):
-                intent = "get_recommendations"
-            elif any(token.text.lower() in ["play"] for token in doc) and any(kw in command.lower() for kw in ["minutes", "hours"]) and "then stop" in command.lower():
-                intent = "timed_playback"
-            elif any(token.text.lower() in ["check", "system", "status"] for token in doc):
-                intent = "check_system"
-            elif any(token.text.lower() in ["screenshot", "capture", "screen"] for token in doc):
-                intent = "take_screenshot"
-        elif self.nlp_choice == "Transformers" and self.transformers_nlp:
-            logger.info(f"Using Transformers for command: {command}")
-            candidate_labels = [
-                "play_song", "play_radio", "play_artist", "play_album", "play_playlist", "play_daylist", "play_liked_song",
-                "like_song", "unlike_song", "pause_playback", "resume_playback",
-                "skip_track", "previous_track", "get_current_song", "toggle_shuffle", "toggle_repeat",
-                "create_playlist", "add_to_playlist", "delete_playlist", "set_volume", "increase_volume",
-                "decrease_volume", "get_recommendations", "timed_playback", "weather", "start_program",
-                "check_system", "take_screenshot", "unknown",
-                "radio", "skip", "next", "previous", "back", "play", "song", "artist", "album", "playlist",
-                "daylist", "liked", "pause", "resume", "check", "current", "playing", "toggle", "switch",
-                "shuffle", "repeat", "create", "add", "delete", "set", "adjust", "volume", "increase", "decrease",
-                "recommend", "find", "minutes", "hours", "then", "stop", "screenshot", "capture", "screen"
-            ]
+        command_lower = command.lower()
+        entities = self.extract_entities(command)
+
+        # Pre-filter with trigger words and entities
+        if any(word in command_lower for word in ["weather", "forecast", "alerts"]) or entities["location"]:
+            pre_filtered_intent = "weather"
+        elif any(word in command_lower for word in ["start", "launch", "open"]) and any(word in command_lower for word in ["notepad", "word", "excel", "chrome", "firefox", "spotify", "discord", "zoom", "teams", "outlook", "slack", "skype", "adobe", "onenote", "vlc", "explorer", "terminal", "calculator", "paint", "safari", "gimp", "audacity", "blender", "opera", "thunderbird", "libreoffice", "inkscape"]):
+            pre_filtered_intent = "start_program"
+        elif "play" in command_lower and "song" in command_lower and "liked" in command_lower:
+            pre_filtered_intent = "play_liked_song"
+        elif "play" in command_lower and "song" in command_lower or entities["song"]:
+            pre_filtered_intent = "play_song"
+        elif "play" in command_lower and ("artist radio" in command_lower or "radio artist" in command_lower):
+            pre_filtered_intent = "play_radio"
+        elif "play" in command_lower and "artist" in command_lower and "radio" not in command_lower:
+            pre_filtered_intent = "play_artist"
+        elif "play" in command_lower and "album" in command_lower:
+            pre_filtered_intent = "play_album"
+        elif "play" in command_lower and "playlist" in command_lower:
+            pre_filtered_intent = "play_playlist"
+        elif "play" in command_lower and "daylist" in command_lower:
+            pre_filtered_intent = "play_daylist"
+        elif any(word in command_lower for word in ["like", "favorite"]) and "song" in command_lower:
+            pre_filtered_intent = "like_song"
+        elif any(word in command_lower for word in ["unlike", "remove", "unfavorite"]) and "song" in command_lower:
+            pre_filtered_intent = "unlike_song"
+        elif "pause" in command_lower:
+            pre_filtered_intent = "pause_playback"
+        elif "resume" in command_lower or ("play" in command_lower and "music" in command_lower):
+            pre_filtered_intent = "resume_playback"
+        elif any(word in command_lower for word in ["skip", "next"]):
+            pre_filtered_intent = "skip_track"
+        elif any(word in command_lower for word in ["previous", "back"]):
+            pre_filtered_intent = "previous_track"
+        elif any(word in command_lower for word in ["check", "current", "playing"]) and "song" in command_lower:
+            pre_filtered_intent = "get_current_song"
+        elif any(word in command_lower for word in ["toggle", "switch"]) and "shuffle" in command_lower:
+            pre_filtered_intent = "toggle_shuffle"
+        elif any(word in command_lower for word in ["toggle", "switch"]) and "repeat" in command_lower:
+            pre_filtered_intent = "toggle_repeat"
+        elif "create" in command_lower and "playlist" in command_lower:
+            pre_filtered_intent = "create_playlist"
+        elif "add" in command_lower and "playlist" in command_lower:
+            pre_filtered_intent = "add_to_playlist"
+        elif "delete" in command_lower and "playlist" in command_lower:
+            pre_filtered_intent = "delete_playlist"
+        elif any(word in command_lower for word in ["set", "adjust"]) and "volume" in command_lower:
+            pre_filtered_intent = "set_volume"
+        elif "increase" in command_lower and "volume" in command_lower:
+            pre_filtered_intent = "increase_volume"
+        elif "decrease" in command_lower and "volume" in command_lower:
+            pre_filtered_intent = "decrease_volume"
+        elif any(word in command_lower for word in ["recommend", "find"]) and any(kw in command_lower for kw in ["song", "artist", "genre"]):
+            pre_filtered_intent = "get_recommendations"
+        elif "play" in command_lower and any(kw in command_lower for kw in ["minutes", "hours"]) and "then stop" in command_lower:
+            pre_filtered_intent = "timed_playback"
+        elif any(word in command_lower for word in ["check", "system", "status"]):
+            pre_filtered_intent = "check_system"
+        elif any(word in command_lower for word in ["screenshot", "capture", "screen", "snap"]):
+            pre_filtered_intent = "take_screenshot"
+        else:
+            pre_filtered_intent = "unknown"
+
+        # Use Transformers for refinement
+        intent = pre_filtered_intent
+        if self.nlp_choice == "Transformers" and self.transformers_model and self.transformers_tokenizer:
+            logger.info(f"Using Transformers to refine command: {command} (Pre-filtered intent: {pre_filtered_intent}, Entities: {entities})")
             try:
-                result = self.transformers_nlp(command, candidate_labels, multi_label=False)
-                intent = result['labels'][0]  # Most likely intent
-                logger.info(f"Transformers result: Label={intent}, Scores={result['scores']}")
+                inputs = self.transformers_tokenizer(command, return_tensors="pt", padding=True, truncation=True, max_length=64)
+                inputs = {k: v.to(self.transformers_model.device) for k, v in inputs.items()}
+
+                with torch.no_grad():
+                    outputs = self.transformers_model(**inputs)
+                    logits = outputs.logits
+
+                probabilities = torch.softmax(logits, dim=1)
+                predicted_label = torch.argmax(logits, dim=1).item()
+                max_probability = probabilities.max().item()
+
+                intent_mapping = {
+                    0: "play_song",
+                    1: "play_radio",
+                    2: "skip_track",
+                    3: "previous_track",
+                    4: "pause_playback",
+                    5: "resume_playback",
+                    6: "like_song",
+                    7: "unlike_song",
+                    8: "get_current_song",
+                    9: "toggle_shuffle",
+                    10: "toggle_repeat",
+                    11: "create_playlist",
+                    12: "add_to_playlist",
+                    13: "delete_playlist",
+                    14: "set_volume",
+                    15: "increase_volume",
+                    16: "decrease_volume",
+                    17: "get_recommendations",
+                    18: "timed_playback",
+                    19: "weather",
+                    20: "start_program",
+                    21: "check_system",
+                    22: "take_screenshot"
+                }
+                transformers_intent = intent_mapping.get(predicted_label, "unknown")
+
+                if max_probability < 0.7:
+                    logger.info(f"Low confidence ({max_probability:.4f}), using pre-filtered intent: {pre_filtered_intent}")
+                else:
+                    intent = transformers_intent
+                    logger.info(f"High confidence ({max_probability:.4f}), using Transformers intent: {transformers_intent}")
+
+                logger.info(f"Transformers result: Label={intent}, Score={max_probability:.4f}, Probabilities={probabilities.tolist()[0]}")
             except Exception as e:
                 logger.error(f"Transformers error: {e}")
-                intent = "unknown"  # Fallback to unknown if Transformers fails
-        else:
-            return "NLP not configured. Check settings.", "NLP not configured."
+                intent = pre_filtered_intent
+
+        # Log misclassifications for active learning
+        if intent == "unknown" or (max_probability < 0.7 and pre_filtered_intent != transformers_intent):
+            with open(self.misclassifications_file, "a") as f:
+                f.write(f"Command: {command}, Predicted: {intent}, Pre-filtered: {pre_filtered_intent}, Score: {max_probability:.4f}, Probabilities: {probabilities.tolist()[0]}\n")
+            logger.info(f"Logged misclassification for active learning: {command}")
+
+        if intent == "weather" and entities["location"]:
+            location = entities["location"]
+        elif intent == "play_song" and entities["song"]:
+            name = entities["song"]
 
         if intent == "weather":
-            detailed_weather = any(keyword in command.lower() for keyword in ["detailed weather", "detailed"])
-            forecast = "forecast" in command.lower()
-            alerts = "alerts" in command.lower()
-            location = re.sub(r"\b(detailed|forecast|alerts|weather)\b", "", command.lower(), flags=re.IGNORECASE).strip()
-            # Handle contractions and preserve "weather"
+            detailed_weather = any(keyword in command_lower for keyword in ["detailed weather", "detailed"])
+            forecast = "forecast" in command_lower
+            alerts = "alerts" in command_lower
+            location = entities.get("location", re.sub(r"\b(detailed|forecast|alerts|weather)\b", "", command_lower, flags=re.IGNORECASE).strip())
             if "what's" in location or "what is" in location:
                 location = re.sub(r"what'?s\s*|what is\s*", "", location).strip()
             if not location or location in ["", "the"]:
@@ -667,11 +710,11 @@ class DesktopAssistant(QWidget):
         elif intent == "play_song":
             match = re.search(r"play\s+(?:a\s+)?song\s+(.+)", command, re.IGNORECASE)
             if match:
-                name = match.group(1).strip()
+                name = entities.get("song", match.group(1)).strip()
                 if self.spotify_controller:
                     play_result = self.spotify_controller.play_song(name)
                     logger.info(f"Attempting to play song: {name}, Result: {play_result}")
-                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                    if isinstance(play_result, str):
                         return play_result, play_result
                     else:
                         return f"Playing song {name} on Spotify", f"Playing song {name} on Spotify"
@@ -682,11 +725,11 @@ class DesktopAssistant(QWidget):
         elif intent == "play_liked_song":
             match = re.search(r"play\s+(?:the\s+)?song\s+(.+)\s+from\s+my\s+liked\s+songs", command, re.IGNORECASE)
             if match:
-                name = match.group(1).strip()
+                name = entities.get("song", match.group(1)).strip()
                 if self.spotify_controller:
                     play_result = self.spotify_controller.play_liked_song(name)
                     logger.info(f"Attempting to play liked song: {name}, Result: {play_result}")
-                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                    if isinstance(play_result, str):
                         return play_result, play_result
                     else:
                         return f"Playing {name} from your liked songs on Spotify", f"Playing {name} from your liked songs on Spotify"
@@ -701,7 +744,7 @@ class DesktopAssistant(QWidget):
                 if self.spotify_controller:
                     play_result = self.spotify_controller.play_artist_radio(name)
                     logger.info(f"Attempting to play radio for: {name}, Result: {play_result}")
-                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                    if isinstance(play_result, str):
                         return play_result, play_result
                     else:
                         return f"Playing radio for {name} on Spotify", f"Playing radio for {name} on Spotify"
@@ -716,7 +759,7 @@ class DesktopAssistant(QWidget):
                 if self.spotify_controller:
                     play_result = self.spotify_controller.play_artist(name)
                     logger.info(f"Attempting to play artist: {name}, Result: {play_result}")
-                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                    if isinstance(play_result, str):
                         return play_result, play_result
                     else:
                         return f"Playing artist {name} on Spotify", f"Playing artist {name} on Spotify"
@@ -731,7 +774,7 @@ class DesktopAssistant(QWidget):
                 if self.spotify_controller:
                     play_result = self.spotify_controller.play_album(name)
                     logger.info(f"Attempting to play album: {name}, Result: {play_result}")
-                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                    if isinstance(play_result, str):
                         return play_result, play_result
                     else:
                         return f"Playing album {name} on Spotify", f"Playing album {name} on Spotify"
@@ -746,7 +789,7 @@ class DesktopAssistant(QWidget):
                 if self.spotify_controller:
                     play_result = self.spotify_controller.play_playlist(name)
                     logger.info(f"Attempting to play playlist: {name}, Result: {play_result}")
-                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                    if isinstance(play_result, str):
                         return play_result, play_result
                     else:
                         return f"Playing playlist {name} on Spotify", f"Playing playlist {name} on Spotify"
@@ -758,7 +801,7 @@ class DesktopAssistant(QWidget):
             if self.spotify_controller:
                 play_result = self.spotify_controller.play_daylist()
                 logger.info(f"Attempting to play daylist, Result: {play_result}")
-                if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                if isinstance(play_result, str):
                     return play_result, play_result
                 else:
                     return "Playing your Daylist on Spotify", "Playing your Daylist on Spotify"
@@ -781,25 +824,25 @@ class DesktopAssistant(QWidget):
             if self.spotify_controller:
                 pause_result = self.spotify_controller.pause_playback()
                 logger.info(f"Pause playback result: {pause_result}")
-                return "", ""  # Silent response for basic playback command
+                return "", ""
 
         elif intent == "resume_playback":
             if self.spotify_controller:
                 resume_result = self.spotify_controller.resume_playback()
                 logger.info(f"Resume playback result: {resume_result}")
-                return "", ""  # Silent response for basic playback command
+                return "", ""
 
         elif intent == "skip_track":
             if self.spotify_controller:
                 skip_result = self.spotify_controller.skip_track()
                 logger.info(f"Skip track result: {skip_result}")
-                return "", ""  # Silent response for basic playback command
+                return "", ""
 
         elif intent == "previous_track":
             if self.spotify_controller:
                 prev_result = self.spotify_controller.previous_track()
                 logger.info(f"Previous track result: {prev_result}")
-                return "", ""  # Silent response for basic playback command
+                return "", ""
 
         elif intent == "get_current_song":
             if self.spotify_controller:
@@ -1168,12 +1211,11 @@ class DesktopAssistant(QWidget):
         self.settings_window.exec()  # Use exec() to make the dialog modal
 
     def save_settings(self):
-        # Save the settings to a file
         try:
             settings = {
                 "spotify_client_id": self.spotify_client_id_entry.text(),
                 "spotify_client_secret": self.spotify_client_secret_entry.text(),
-                "spotify_redirect_uri": self.spotify_redirect_uri_entry.text() or "http://localhost:8080",  # Fallback to default
+                "spotify_redirect_uri": self.spotify_redirect_uri_entry.text() or "http://localhost:8080",
                 "asana_token": self.asana_token_entry.text(),
                 "firefox_path": self.firefox_browser_exe_entry.text(),
                 "geckodriver_path": self.geckodriver_path_entry.text(),
@@ -1185,23 +1227,34 @@ class DesktopAssistant(QWidget):
                 "openai_api_key": self.openai_key_entry.text(),
                 "xai_api_key": self.xai_key_entry.text(),
                 "screenshot_dir": self.screenshot_dir_entry.text(),
-                "system_refresh_interval": int(self.refresh_interval.currentText()) * 1000  # Convert to milliseconds
+                "system_refresh_interval": int(self.refresh_interval.currentText()) * 1000
             }
             with open("settings.json", "w") as file:
                 json.dump(settings, file, indent=4)
-            # Reload settings in the application
             self.load_settings()
             self.system_monitor.set_interval(settings["system_refresh_interval"])
-            # Reinitialize NLP based on new choice
             self.nlp_choice = settings["nlp_choice"]
             self.spacy_nlp = spacy.load("en_core_web_sm") if self.nlp_choice == "Spacy" else None
-            self.transformers_nlp = pipeline("zero-shot-classification", model="./bart_finetuned", tokenizer="./bart_finetuned", device=0 if torch.cuda.is_available() else -1) if self.nlp_choice == "Transformers" else None
+            self.transformers_model = None
+            self.transformers_tokenizer = None
+            if self.nlp_choice == "Transformers":
+                try:
+                    model_path = "./distilbert_finetuned"
+                    self.transformers_tokenizer = DistilBertTokenizer.from_pretrained(model_path)
+                    self.transformers_model = DistilBertForSequenceClassification.from_pretrained(model_path).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+                    logger.info("Transformers model initialized with fine-tuned distilbert-base-uncased on GPU/CPU")
+                except Exception as e:
+                    logger.error(f"Failed to initialize Transformers: {e}")
+                    self.nlp_choice = "Spacy"
+                    self.spacy_nlp = spacy.load("en_core_web_sm")
+                    self.transformers_model = None
+                    self.transformers_tokenizer = None
             QMessageBox.information(self, "Success", "Settings saved successfully.")
         except ValueError as e:
             QMessageBox.critical(self, "Error", f"Invalid refresh interval: {e}")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")   
-
+            QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")
+            
     def open_weather_dashboard(self):
         """Opens the Weather Dashboard window."""
         self.weather_dashboard = WeatherDashboard()
@@ -1242,27 +1295,18 @@ class DesktopAssistant(QWidget):
             json.dump(settings, file, indent=4)
 
     def load_settings(self):
-        """Load settings from settings.json, ensuring system_monitor exists."""
         try:
             with open("settings.json", "r") as file:
                 settings = json.load(file)
-                # Update application logic with these settings
                 for key, value in settings.items():
                     if key == "system_refresh_interval" and hasattr(self, "system_monitor"):
-                        try:
-                            self.system_monitor.set_interval(int(value))
-                        except (ValueError, TypeError):
-                            self.system_monitor.set_interval(5000)  # Default to 5 seconds if invalid
+                        self.system_monitor.set_interval(int(value))
                     elif key == "nlp_choice":
                         self.nlp_choice = value
-                        self.spacy_nlp = spacy.load("en_core_web_sm") if value == "Spacy" else None
-                        self.transformers_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=0 if torch.cuda.is_available() else -1) if value == "Transformers" else None
                     elif key == "ai_choice":
                         self.ai_choice = value
-                    # ... (other settings logic as needed)
         except FileNotFoundError:
             pass
-        # Ensure reset macro key is initialized
         self.initialize_reset_macro()
 
     def start_program(self, program_name):
