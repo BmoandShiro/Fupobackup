@@ -524,8 +524,20 @@ class DesktopAssistant(QWidget):
                 intent = "weather"
             elif any(token.text.lower() in ["start", "launch", "open"] for token in doc):
                 intent = "start_program"
-            elif any(token.text.lower() in ["play", "music", "song", "artist", "album", "playlist", "radio", "daylist", "liked"] for token in doc):
-                intent = "play_music"
+            elif any(token.text.lower() in ["play"] for token in doc) and "song" in command.lower() and "liked" in command.lower():
+                intent = "play_liked_song"
+            elif any(token.text.lower() in ["play"] for token in doc) and "song" in command.lower():
+                intent = "play_song"
+            elif any(token.text.lower() in ["play"] for token in doc) and ("artist radio" in command.lower() or "radio artist" in command.lower()):
+                intent = "play_radio"
+            elif any(token.text.lower() in ["play"] for token in doc) and "artist" in command.lower() and not "radio" in command.lower():
+                intent = "play_artist"
+            elif any(token.text.lower() in ["play"] for token in doc) and "album" in command.lower():
+                intent = "play_album"
+            elif any(token.text.lower() in ["play"] for token in doc) and "playlist" in command.lower():
+                intent = "play_playlist"
+            elif any(token.text.lower() in ["play"] for token in doc) and "daylist" in command.lower():
+                intent = "play_daylist"
             elif any(token.text.lower() in ["like", "favorite"] for token in doc) and "song" in command.lower():
                 intent = "like_song"
             elif any(token.text.lower() in ["unlike", "remove", "unfavorite"] for token in doc) and "song" in command.lower():
@@ -534,9 +546,9 @@ class DesktopAssistant(QWidget):
                 intent = "pause_playback"
             elif any(token.text.lower() in ["resume", "play"] for token in doc) and "music" in command.lower():
                 intent = "resume_playback"
-            elif any(token.text.lower() in ["skip", "next"] for token in doc):  # Updated to recognize standalone "skip"
+            elif any(token.text.lower() in ["skip", "next"] for token in doc):
                 intent = "skip_track"
-            elif any(token.text.lower() in ["previous", "back"] for token in doc):  # Updated to recognize standalone "previous"
+            elif any(token.text.lower() in ["previous", "back"] for token in doc):
                 intent = "previous_track"
             elif any(token.text.lower() in ["check", "current", "playing"] for token in doc) and "song" in command.lower():
                 intent = "get_current_song"
@@ -544,6 +556,22 @@ class DesktopAssistant(QWidget):
                 intent = "toggle_shuffle"
             elif any(token.text.lower() in ["toggle", "switch"] for token in doc) and "repeat" in command.lower():
                 intent = "toggle_repeat"
+            elif any(token.text.lower() in ["create"] for token in doc) and "playlist" in command.lower():
+                intent = "create_playlist"
+            elif any(token.text.lower() in ["add"] for token in doc) and "playlist" in command.lower():
+                intent = "add_to_playlist"
+            elif any(token.text.lower() in ["delete"] for token in doc) and "playlist" in command.lower():
+                intent = "delete_playlist"
+            elif any(token.text.lower() in ["set", "adjust"] for token in doc) and "volume" in command.lower():
+                intent = "set_volume"
+            elif any(token.text.lower() in ["increase"] for token in doc) and "volume" in command.lower():
+                intent = "increase_volume"
+            elif any(token.text.lower() in ["decrease"] for token in doc) and "volume" in command.lower():
+                intent = "decrease_volume"
+            elif any(token.text.lower() in ["recommend", "find"] for token in doc) and any(kw in command.lower() for kw in ["song", "artist", "genre"]):
+                intent = "get_recommendations"
+            elif any(token.text.lower() in ["play"] for token in doc) and any(kw in command.lower() for kw in ["minutes", "hours"]) and "then stop" in command.lower():
+                intent = "timed_playback"
             elif any(token.text.lower() in ["check", "system", "status"] for token in doc):
                 intent = "check_system"
             elif any(token.text.lower() in ["screenshot", "capture", "screen"] for token in doc):
@@ -551,17 +579,24 @@ class DesktopAssistant(QWidget):
         elif self.nlp_choice == "Transformers" and self.transformers_nlp:
             logger.info(f"Using Transformers for command: {command}")
             candidate_labels = [
-                "weather", "start_program", "play_music", "like_song", "unlike_song", "pause_playback", "resume_playback",
-                "skip_track", "previous_track", "get_current_song", "toggle_shuffle", "toggle_repeat", "check_system",
-                "take_screenshot", "unknown"
+                "play_song", "play_radio", "play_artist", "play_album", "play_playlist", "play_daylist", "play_liked_song",
+                "like_song", "unlike_song", "pause_playback", "resume_playback",
+                "skip_track", "previous_track", "get_current_song", "toggle_shuffle", "toggle_repeat",
+                "create_playlist", "add_to_playlist", "delete_playlist", "set_volume", "increase_volume",
+                "decrease_volume", "get_recommendations", "timed_playback", "weather", "start_program",
+                "check_system", "take_screenshot", "unknown",
+                "radio", "skip", "next", "previous", "back", "play", "song", "artist", "album", "playlist",
+                "daylist", "liked", "pause", "resume", "check", "current", "playing", "toggle", "switch",
+                "shuffle", "repeat", "create", "add", "delete", "set", "adjust", "volume", "increase", "decrease",
+                "recommend", "find", "minutes", "hours", "then", "stop", "screenshot", "capture", "screen"
             ]
             try:
                 result = self.transformers_nlp(command, candidate_labels, multi_label=False)
                 intent = result['labels'][0]  # Most likely intent
-                logger.info(f"Transformers result: {result}")
+                logger.info(f"Transformers result: Label={intent}, Scores={result['scores']}")
             except Exception as e:
                 logger.error(f"Transformers error: {e}")
-                intent = "unknown"
+                intent = "unknown"  # Fallback to unknown if Transformers fails
         else:
             return "NLP not configured. Check settings.", "NLP not configured."
 
@@ -629,41 +664,105 @@ class DesktopAssistant(QWidget):
                 return self.start_program_with_confirmation(program_name)
             return "Program not specified.", "Program not specified."
 
-        elif intent == "play_music":
-            match = re.search(r"play\s+(?:a\s+)?(?:song|artist|album|artist radio|(?:\w+\s+)?radio artist|playlist|daylist|liked song)\s+(.+)", command, re.IGNORECASE)
+        elif intent == "play_song":
+            match = re.search(r"play\s+(?:a\s+)?song\s+(.+)", command, re.IGNORECASE)
             if match:
                 name = match.group(1).strip()
                 if self.spotify_controller:
-                    if "song" in command.lower() and "liked" in command.lower():
-                        play_result = self.spotify_controller.play_liked_song(name)
-                    elif "song" in command.lower():
-                        play_result = self.spotify_controller.play_song(name)
-                    elif "artist" in command.lower() and "radio" in command.lower():
-                        play_result = self.spotify_controller.play_artist_radio(name)
-                    elif "radio" in command.lower() and "artist" in command.lower():
-                        # Handle "play [artist] radio" format
-                        artist_match = re.search(r"play\s+(\w+)\s+radio", command, re.IGNORECASE)
-                        if artist_match:
-                            name = artist_match.group(1).strip()
-                            play_result = self.spotify_controller.play_artist_radio(name)
-                        else:
-                            play_result = "Artist not specified in radio command."
-                    elif "album" in command.lower():
-                        play_result = self.spotify_controller.play_album(name)
-                    elif "playlist" in command.lower():
-                        play_result = self.spotify_controller.play_playlist(name)
-                    elif "daylist" in command.lower():
-                        play_result = self.spotify_controller.play_daylist()
-                    else:
-                        play_result = self.spotify_controller.play_song(name)  # Default to song
-                    logger.info(f"Attempting to play: {name}, Result: {play_result}")
+                    play_result = self.spotify_controller.play_song(name)
+                    logger.info(f"Attempting to play song: {name}, Result: {play_result}")
                     if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
                         return play_result, play_result
                     else:
-                        return f"Playing {name} on Spotify", f"Playing {name} on Spotify"
+                        return f"Playing song {name} on Spotify", f"Playing song {name} on Spotify"
                 else:
                     return "Spotify not configured. Check authentication.", "Spotify not configured."
-            return "Music command unclear.", "Music command unclear."
+            return "Song name not specified. Say 'play a song [name]'.", "Song name not specified."
+
+        elif intent == "play_liked_song":
+            match = re.search(r"play\s+(?:the\s+)?song\s+(.+)\s+from\s+my\s+liked\s+songs", command, re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if self.spotify_controller:
+                    play_result = self.spotify_controller.play_liked_song(name)
+                    logger.info(f"Attempting to play liked song: {name}, Result: {play_result}")
+                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                        return play_result, play_result
+                    else:
+                        return f"Playing {name} from your liked songs on Spotify", f"Playing {name} from your liked songs on Spotify"
+                else:
+                    return "Spotify not configured. Check authentication.", "Spotify not configured."
+            return "Song name not specified. Say 'play the song [name] from my liked songs'.", "Song name not specified."
+
+        elif intent == "play_radio":
+            match = re.search(r"play\s+(?:artist\s+)?radio\s+(.+)", command, re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if self.spotify_controller:
+                    play_result = self.spotify_controller.play_artist_radio(name)
+                    logger.info(f"Attempting to play radio for: {name}, Result: {play_result}")
+                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                        return play_result, play_result
+                    else:
+                        return f"Playing radio for {name} on Spotify", f"Playing radio for {name} on Spotify"
+                else:
+                    return "Spotify not configured. Check authentication.", "Spotify not configured."
+            return "Artist name not specified. Say 'play artist radio [name]' or 'play [name] radio'.", "Artist name not specified."
+
+        elif intent == "play_artist":
+            match = re.search(r"play\s+artist\s+(.+)", command, re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if self.spotify_controller:
+                    play_result = self.spotify_controller.play_artist(name)
+                    logger.info(f"Attempting to play artist: {name}, Result: {play_result}")
+                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                        return play_result, play_result
+                    else:
+                        return f"Playing artist {name} on Spotify", f"Playing artist {name} on Spotify"
+                else:
+                    return "Spotify not configured. Check authentication.", "Spotify not configured."
+            return "Artist name not specified. Say 'play artist [name]'.", "Artist name not specified."
+
+        elif intent == "play_album":
+            match = re.search(r"play\s+album\s+(.+)", command, re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if self.spotify_controller:
+                    play_result = self.spotify_controller.play_album(name)
+                    logger.info(f"Attempting to play album: {name}, Result: {play_result}")
+                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                        return play_result, play_result
+                    else:
+                        return f"Playing album {name} on Spotify", f"Playing album {name} on Spotify"
+                else:
+                    return "Spotify not configured. Check authentication.", "Spotify not configured."
+            return "Album name not specified. Say 'play album [name]'.", "Album name not specified."
+
+        elif intent == "play_playlist":
+            match = re.search(r"play\s+playlist\s+(.+)", command, re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if self.spotify_controller:
+                    play_result = self.spotify_controller.play_playlist(name)
+                    logger.info(f"Attempting to play playlist: {name}, Result: {play_result}")
+                    if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                        return play_result, play_result
+                    else:
+                        return f"Playing playlist {name} on Spotify", f"Playing playlist {name} on Spotify"
+                else:
+                    return "Spotify not configured. Check authentication.", "Spotify not configured."
+            return "Playlist name not specified. Say 'play playlist [name]'.", "Playlist name not specified."
+
+        elif intent == "play_daylist":
+            if self.spotify_controller:
+                play_result = self.spotify_controller.play_daylist()
+                logger.info(f"Attempting to play daylist, Result: {play_result}")
+                if isinstance(play_result, str):  # If the return value is a string (error message or confirmation)
+                    return play_result, play_result
+                else:
+                    return "Playing your Daylist on Spotify", "Playing your Daylist on Spotify"
+            return "Spotify not configured. Check authentication.", "Spotify not configured."
 
         elif intent == "like_song":
             if self.spotify_controller:
@@ -723,6 +822,96 @@ class DesktopAssistant(QWidget):
                 return repeat_result, repeat_result
             return "Spotify not configured. Check authentication.", "Spotify not configured."
 
+        elif intent == "create_playlist":
+            match = re.search(r"create\s+a\s+playlist\s+called\s+(.+)", command, re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if self.spotify_controller:
+                    create_result = self.spotify_controller.create_playlist(name)
+                    logger.info(f"Create playlist result: {create_result}")
+                    return create_result, create_result
+            return "Playlist name not specified. Say 'create a playlist called [name]'.", "Playlist name not specified."
+
+        elif intent == "add_to_playlist":
+            match = re.search(r"add\s+(?:this|the)\s+song\s+to\s+my\s+(\w+)\s+playlist", command, re.IGNORECASE)
+            if match:
+                playlist_name = match.group(1).strip()
+                if self.spotify_controller:
+                    current_track = self.spotify_controller.get_current_song()
+                    if "Currently playing:" in current_track:
+                        track_name = current_track.split("Currently playing: ")[1].split(" by ")[0]
+                        track_results = self.spotify_controller.sp.search(q=track_name, type='track', limit=1)
+                        if track_results['tracks']['items']:
+                            track_uri = f"spotify:track:{track_results['tracks']['items'][0]['id']}"
+                            add_result = self.spotify_controller.add_to_playlist(playlist_name, track_uri)
+                            logger.info(f"Add to playlist result: {add_result}")
+                            return add_result, add_result
+                    return "No song is currently playing or song not found.", "No song is currently playing or song not found."
+            return "Playlist name not specified. Say 'add this song to my [playlist] playlist'.", "Playlist name not specified."
+
+        elif intent == "delete_playlist":
+            match = re.search(r"delete\s+playlist\s+(.+)", command, re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if self.spotify_controller:
+                    delete_result = self.spotify_controller.delete_playlist(name)
+                    logger.info(f"Delete playlist result: {delete_result}")
+                    return delete_result, delete_result
+            return "Playlist name not specified. Say 'delete playlist [name]'.", "Playlist name not specified."
+
+        elif intent == "set_volume":
+            match = re.search(r"set\s+spotify\s+volume\s+to\s+(\d+)%", command, re.IGNORECASE)
+            if match:
+                volume = int(match.group(1))
+                if self.spotify_controller:
+                    volume_result = self.spotify_controller.set_volume(volume)
+                    logger.info(f"Set volume result: {volume_result}")
+                    return volume_result, volume_result
+            return "Volume not specified. Say 'set Spotify volume to [number]%' (0-100).", "Volume not specified."
+
+        elif intent == "increase_volume":
+            match = re.search(r"increase\s+spotify\s+volume(?:\s+by\s+(\d+)%?)?", command, re.IGNORECASE)
+            if match:
+                amount = int(match.group(1)) if match.group(1) else 10  # Default to 10% if no amount specified
+                if self.spotify_controller:
+                    volume_result = self.spotify_controller.increase_volume(amount)
+                    logger.info(f"Increase volume result: {volume_result}")
+                    return volume_result, volume_result
+            return "Say 'increase Spotify volume' or 'increase Spotify volume by [number]%' (default 10%).", "Say 'increase Spotify volume'."
+
+        elif intent == "decrease_volume":
+            match = re.search(r"decrease\s+spotify\s+volume(?:\s+by\s+(\d+)%?)?", command, re.IGNORECASE)
+            if match:
+                amount = int(match.group(1)) if match.group(1) else 10  # Default to 10% if no amount specified
+                if self.spotify_controller:
+                    volume_result = self.spotify_controller.decrease_volume(amount)
+                    logger.info(f"Decrease volume result: {volume_result}")
+                    return volume_result, volume_result
+            return "Say 'decrease Spotify volume' or 'decrease Spotify volume by [number]%' (default 10%).", "Say 'decrease Spotify volume'."
+
+        elif intent == "get_recommendations":
+            match = re.search(r"(?:recommend|find)\s+(songs|artists)\s+like\s+(.+)|(?:recommend|find)\s+(\w+)\s+music", command, re.IGNORECASE)
+            if match:
+                seed_type = "song" if match.group(1) == "songs" else "artist" if match.group(1) == "artists" else "genre"
+                seed_value = match.group(2) if match.group(2) else match.group(3)
+                if self.spotify_controller and seed_value:
+                    rec_result = self.spotify_controller.get_recommendations(seed_type, seed_value)
+                    logger.info(f"Recommendations result: {rec_result}")
+                    return rec_result, rec_result
+            return "Specify what to recommend (e.g., 'recommend songs like Bohemian Rhapsody', 'recommend artist music').", "Specify what to recommend."
+
+        elif intent == "timed_playback":
+            match = re.search(r"play\s+music\s+for\s+(\d+)\s+(minutes|hours)\s+then\s+stop", command, re.IGNORECASE)
+            if match:
+                time_value = int(match.group(1))
+                unit = match.group(2)
+                seconds = time_value * 60 if unit == "minutes" else time_value * 3600
+                if self.spotify_controller:
+                    timed_result = self.spotify_controller.stop_after_time(seconds)
+                    logger.info(f"Timed playback result: {timed_result}")
+                    return timed_result, timed_result
+            return "Specify time (e.g., 'play music for 30 minutes then stop', 'play music for 1 hour then stop').", "Specify time."
+
         elif intent == "check_system":
             if not self.system_monitor.enabled:
                 msg = "System monitoring is disabled. Enable it in the System tab."
@@ -745,6 +934,8 @@ class DesktopAssistant(QWidget):
 
         else:
             return "I'm not sure how to respond to that.", "I'm not sure how to respond."
+        
+
 
     def ask_chatgpt(self, query):
         try:

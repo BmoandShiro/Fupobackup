@@ -6,6 +6,8 @@ from spotipy.exceptions import SpotifyException
 from functools import wraps
 import logging
 import webbrowser  # Added to fix 'name 'webbrowser' is not defined' error
+import time
+from threading import Timer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -250,3 +252,124 @@ class SpotifyController:
             new_state = 'off'
         self.sp.repeat(new_state)
         return f"Repeat set to {'context' if new_state == 'context' else 'track' if new_state == 'track' else 'off'}."
+    
+    @handle_spotify_exceptions
+    def create_playlist(self, playlist_name, description="Created via Desktop Assistant"):
+        """Create a new playlist with the given name and optional description."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        user_id = self.sp.current_user()['id']
+        playlist = self.sp.user_playlist_create(user_id, playlist_name, public=True, description=description)
+        return f"Created playlist '{playlist_name}' with ID {playlist['id']}"
+
+    @handle_spotify_exceptions
+    def add_to_playlist(self, playlist_name, track_uri):
+        """Add a track to an existing playlist by name."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        playlists = self.sp.current_user_playlists()
+        playlist_id = None
+        for playlist in playlists['items']:
+            if playlist_name.lower() in playlist['name'].lower():
+                playlist_id = playlist['id']
+                break
+        if not playlist_id:
+            return f"Playlist '{playlist_name}' not found."
+        self.sp.playlist_add_items(playlist_id, [track_uri])
+        return f"Added track to playlist '{playlist_name}'"
+
+    @handle_spotify_exceptions
+    def delete_playlist(self, playlist_name):
+        """Delete an existing playlist by name."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        playlists = self.sp.current_user_playlists()
+        playlist_id = None
+        for playlist in playlists['items']:
+            if playlist_name.lower() in playlist['name'].lower():
+                playlist_id = playlist['id']
+                break
+        if not playlist_id:
+            return f"Playlist '{playlist_name}' not found."
+        self.sp.current_user_unfollow_playlist(playlist_id)
+        return f"Deleted playlist '{playlist_name}'"
+
+    @handle_spotify_exceptions
+    def set_volume(self, volume_percent):
+        """Set Spotify playback volume (0-100)."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        if not 0 <= volume_percent <= 100:
+            return "Volume must be between 0 and 100."
+        self.sp.volume(volume_percent)
+        return f"Set Spotify volume to {volume_percent}%"
+
+    @handle_spotify_exceptions
+    def increase_volume(self, amount=10):
+        """Increase Spotify volume by a specified amount (default 10%)."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        current_playback = self.sp.current_playback()
+        if current_playback and 'device' in current_playback and 'volume_percent' in current_playback['device']:
+            current_volume = current_playback['device']['volume_percent']
+            new_volume = min(100, current_volume + amount)  # Cap at 100
+            self.sp.volume(new_volume)
+            return f"Increased Spotify volume to {new_volume}%"
+        return "Could not retrieve current volume."
+
+    @handle_spotify_exceptions
+    def decrease_volume(self, amount=10):
+        """Decrease Spotify volume by a specified amount (default 10%)."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        current_playback = self.sp.current_playback()
+        if current_playback and 'device' in current_playback and 'volume_percent' in current_playback['device']:
+            current_volume = current_playback['device']['volume_percent']
+            new_volume = max(0, current_volume - amount)  # Cap at 0
+            self.sp.volume(new_volume)
+            return f"Decreased Spotify volume to {new_volume}%"
+        return "Could not retrieve current volume."
+
+    @handle_spotify_exceptions
+    def get_recommendations(self, seed_type, seed_value, limit=10):
+        """Get recommendations based on a song, artist, or genre."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        if seed_type == "song":
+            results = self.sp.search(q=seed_value, type='track', limit=1)
+            if results['tracks']['items']:
+                seed_id = results['tracks']['items'][0]['id']
+                recommendations = self.sp.recommendations(seed_tracks=[seed_id], limit=limit)
+            else:
+                return f"Song '{seed_value}' not found."
+        elif seed_type == "artist":
+            results = self.sp.search(q=seed_value, type='artist', limit=1)
+            if results['artists']['items']:
+                seed_id = results['artists']['items'][0]['id']
+                recommendations = self.sp.recommendations(seed_artists=[seed_id], limit=limit)
+            else:
+                return f"Artist '{seed_value}' not found."
+        elif seed_type == "genre":
+            recommendations = self.sp.recommendations(seed_genres=[seed_value.lower()], limit=limit)
+        else:
+            return "Invalid seed type. Use 'song', 'artist', or 'genre'."
+        
+        track_uris = [f'spotify:track:{track["id"]}' for track in recommendations['tracks']]
+        self.sp.start_playback(uris=track_uris)
+        self.sp.repeat('context')
+        self.sp.shuffle(True)
+        return f"Playing {limit} recommendations based on {seed_type} '{seed_value}'"
+
+    def stop_after_time(self, seconds):
+        """Stop playback after a specified time (in seconds)."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        def stop_playback():
+            try:
+                self.sp.pause_playback()
+                logger.info("Playback stopped after timer.")
+            except Exception as e:
+                logger.error(f"Error stopping playback: {e}")
+        timer = Timer(seconds, stop_playback)
+        timer.start()
+        return f"Playback will stop after {seconds} seconds"

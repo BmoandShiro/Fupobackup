@@ -1,0 +1,144 @@
+command,intent
+"play song ain’t no rest for the wicked",play_song
+"play the song ain’t no rest for the wicked now",play_song
+"play a song called ain’t no rest for the wicked",play_song
+"play that tune ain’t no rest for the wicked",play_song
+"start the song ain’t no rest for the wicked",play_song
+"play song ain't there no rest for the wicked",play_song
+"play ain’t no rest for the wicked track",play_song
+"play the track ain’t no rest for the wicked",play_song
+"play Arctic Monkeys radio",play_radio
+"play artist radio Arctic Monkeys",play_radio
+"start Arctic Monkeys radio station",play_radio
+"launch Arctic Monkeys radio stream",play_radio
+"play Arctic Monkeys artist radio",play_radio
+"start radio for Arctic Monkeys now",play_radio
+"play Arctic Monkeys music radio",play_radio
+"skip",skip_track
+"next track",skip_track
+"move to the next song",skip_track
+"jump to next",skip_track
+"go forward a song",skip_track
+"advance to the next track",skip_track
+"skip ahead",skip_track
+"previous",previous_track
+"go back",previous_track
+"return to the last track",previous_track
+"move back a song",previous_track
+"rewind to previous",previous_track
+"go to the last song",previous_track
+"step back a track",previous_track
+"pause",pause_playback
+"stop the music",pause_playback
+"hold playback",pause_playback
+"pause the audio",pause_playback
+"halt the song",pause_playback
+"freeze the music",pause_playback
+"resume",resume_playback
+"start playing again",resume_playback
+"continue the music",resume_playback
+"unpause the audio",resume_playback
+"resume playback now",resume_playback
+"start the music back up",resume_playback
+"like this song",like_song
+"favorite this track",like_song
+"add this song to my likes",like_song
+"love this song",like_song
+"mark this track as favorite",like_song
+"save this song to favorites",like_song
+"unlike this song",unlike_song
+"remove this song from favorites",unlike_song
+"unfavorite this track",unlike_song
+"dislike this song",unlike_song
+"take this song off likes",unlike_song
+"remove this track from saved",unlike_song
+"check current song",get_current_song
+"what’s playing now",get_current_song
+"show me the current track",get_current_song
+"what song is on",get_current_song
+"tell me what’s playing",get_current_song
+"display current music",get_current_song
+"toggle shuffle",toggle_shuffle
+"switch shuffle mode",toggle_shuffle
+"turn shuffle on or off",toggle_shuffle
+"flip shuffle setting",toggle_shuffle
+"change shuffle status",toggle_shuffle
+"toggle random play",toggle_shuffle
+"toggle repeat",toggle_repeat
+"switch repeat mode",toggle_repeat
+"turn repeat on or off",toggle_repeat
+"flip repeat setting",toggle_repeat
+"change repeat status",toggle_repeat
+"toggle loop play",toggle_repeat
+"create a playlist called Road Trip",create_playlist
+"make a new playlist named Road Trip",create_playlist
+"start a playlist called Road Trip",create_playlist
+"build a playlist named Road Trip",create_playlist
+"set up playlist Road Trip",create_playlist
+"generate playlist Road Trip",create_playlist
+"add this song to my Favorites playlist",add_to_playlist
+"put this track in my Favorites playlist",add_to_playlist
+"include this song in Favorites",add_to_playlist
+"add this tune to Favorites list",add_to_playlist
+"place this song in my Favorites",add_to_playlist
+"insert this track into Favorites",add_to_playlist
+"delete playlist Road Trip",delete_playlist
+"remove playlist Road Trip",delete_playlist
+"erase playlist Road Trip",delete_playlist
+"delete Road Trip playlist",delete_playlist
+"remove the Road Trip list",delete_playlist
+"erase my Road Trip playlist",delete_playlist
+"set Spotify volume to 50%",set_volume
+"adjust Spotify volume to 50 percent",set_volume
+"change Spotify volume to 50%",set_volume
+"fix Spotify volume at 50%",set_volume
+"set music volume to 50% on Spotify",set_volume
+"adjust audio to 50% in Spotify",set_volume
+"increase Spotify volume",increase_volume
+"raise Spotify volume",increase_volume
+"make Spotify louder",increase_volume
+"boost Spotify volume",increase_volume
+"turn up Spotify audio",increase_volume
+"raise the music volume on Spotify",increase_volume
+"decrease Spotify volume",decrease_volume
+"lower Spotify volume",decrease_volume
+"make Spotify quieter",decrease_volume
+"reduce Spotify volume",decrease_volume
+"turn down Spotify audio",decrease_volume
+"lower the music volume on Spotify",decrease_volume
+"recommend songs like Bohemian Rhapsody",get_recommendations
+"find tracks similar to Bohemian Rhapsody",get_recommendations
+"suggest songs like Bohemian Rhapsody",get_recommendations
+"find music like Bohemian Rhapsody",get_recommendations
+"recommend tunes similar to Bohemian Rhapsody",get_recommendations
+"suggest tracks like Bohemian Rhapsody",get_recommendations
+"play music for 30 minutes then stop",timed_playback
+"play songs for half an hour then pause",timed_playback
+"listen to music for 30 minutes and stop",timed_playback
+"play tunes for 30 mins then halt",timed_playback
+"stream music for 30 minutes then quit",timed_playback
+"play audio for half an hour then stop",timed_playback
+"weather",weather
+"what’s the weather like",weather
+"check the weather forecast",weather
+"what’s the weather today",weather
+"tell me the current weather",weather
+"show today’s weather",weather
+"start notepad",start_program
+"open notepad",start_program
+"launch notepad application",start_program
+"run notepad",start_program
+"start the notepad program",start_program
+"open Notepad app",start_program
+"check system status",check_system
+"show system stats",check_system
+"view system information",check_system
+"check system performance",check_system
+"display system metrics",check_system
+"report system status",check_system
+"take screenshot",take_screenshot
+"capture screen",take_screenshot
+"snap a screenshot",take_screenshot
+"grab a screen capture",take_screenshot
+"take a screen shot",take_screenshot
+"capture the screen now",take_screenshot
