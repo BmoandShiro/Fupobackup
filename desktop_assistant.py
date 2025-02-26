@@ -579,11 +579,13 @@ class DesktopAssistant(QWidget):
         else:
             pre_filtered_intent = "unknown"
 
-        # Use Transformers for refinement
-        intent = pre_filtered_intent
+        # After determining the pre-filtered intent earlier:
+# pre_filtered_intent = "weather" or "start_program", etc.
+
+# Use Transformers for refinement only if selected and available.
         if self.nlp_choice == "Transformers" and self.transformers_model and self.transformers_tokenizer:
-            logger.info(f"Using Transformers to refine command: {command} (Pre-filtered intent: {pre_filtered_intent}, Entities: {entities})")
             try:
+                logger.info(f"Using Transformers to refine command: {command} (Pre-filtered intent: {pre_filtered_intent}, Entities: {entities})")
                 inputs = self.transformers_tokenizer(command, return_tensors="pt", padding=True, truncation=True, max_length=64)
                 inputs = {k: v.to(self.transformers_model.device) for k, v in inputs.items()}
 
@@ -624,20 +626,29 @@ class DesktopAssistant(QWidget):
 
                 if max_probability < 0.7:
                     logger.info(f"Low confidence ({max_probability:.4f}), using pre-filtered intent: {pre_filtered_intent}")
+                    intent = pre_filtered_intent
                 else:
                     intent = transformers_intent
                     logger.info(f"High confidence ({max_probability:.4f}), using Transformers intent: {transformers_intent}")
 
                 logger.info(f"Transformers result: Label={intent}, Score={max_probability:.4f}, Probabilities={probabilities.tolist()[0]}")
+
+                # Log misclassifications for active learning (only when using Transformers)
+                if intent == "unknown" or (max_probability < 0.7 and pre_filtered_intent != transformers_intent):
+                    with open(self.misclassifications_file, "a") as f:
+                        f.write(
+                            f"Command: {command}, Predicted: {intent}, Pre-filtered: {pre_filtered_intent}, "
+                            f"Score: {max_probability:.4f}, Probabilities: {probabilities.tolist()[0]}\n"
+                        )
+                    logger.info(f"Logged misclassification for active learning: {command}")
             except Exception as e:
                 logger.error(f"Transformers error: {e}")
                 intent = pre_filtered_intent
+        else:
+            # When using spaCy (or if Transformers are unavailable), default to the pre-filtered intent.
+            intent = pre_filtered_intent
 
-        # Log misclassifications for active learning
-        if intent == "unknown" or (max_probability < 0.7 and pre_filtered_intent != transformers_intent):
-            with open(self.misclassifications_file, "a") as f:
-                f.write(f"Command: {command}, Predicted: {intent}, Pre-filtered: {pre_filtered_intent}, Score: {max_probability:.4f}, Probabilities: {probabilities.tolist()[0]}\n")
-            logger.info(f"Logged misclassification for active learning: {command}")
+
 
         if intent == "weather" and entities["location"]:
             location = entities["location"]
@@ -648,11 +659,18 @@ class DesktopAssistant(QWidget):
             detailed_weather = any(keyword in command_lower for keyword in ["detailed weather", "detailed"])
             forecast = "forecast" in command_lower
             alerts = "alerts" in command_lower
-            location = entities.get("location", re.sub(r"\b(detailed|forecast|alerts|weather)\b", "", command_lower, flags=re.IGNORECASE).strip())
+            # If entities["location"] is None, fall back to a cleaned-up command string.
+            location = entities.get("location") or re.sub(
+                r"\b(detailed|forecast|alerts|weather)\b", "", command_lower, flags=re.IGNORECASE
+            ).strip()
+            # Ensure location is a string before iterating
+            location = location or ""
             if "what's" in location or "what is" in location:
                 location = re.sub(r"what'?s\s*|what is\s*", "", location).strip()
             if not location or location in ["", "the"]:
                 location = "auto"
+            # Continue with your weather API call...
+
             logger.info(f"Parsed weather location: {location}, detailed: {detailed_weather}, forecast: {forecast}, alerts: {alerts}")
             try:
                 display_msg, spoken_msg = self.weather_api.get_weather(location, spoken_request=command, detailed=detailed_weather)
