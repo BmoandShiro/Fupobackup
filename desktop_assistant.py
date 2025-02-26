@@ -728,7 +728,8 @@ class DesktopAssistant(QWidget):
         elif intent == "play_song":
             match = re.search(r"play\s+(?:a\s+)?song\s+(.+)", command, re.IGNORECASE)
             if match:
-                name = entities.get("song", match.group(1)).strip()
+                # Use the entity if available, otherwise the regex capture; default to empty string if both are None.
+                name = (entities.get("song") or match.group(1) or "").strip()
                 if self.spotify_controller:
                     play_result = self.spotify_controller.play_song(name)
                     logger.info(f"Attempting to play song: {name}, Result: {play_result}")
@@ -739,6 +740,7 @@ class DesktopAssistant(QWidget):
                 else:
                     return "Spotify not configured. Check authentication.", "Spotify not configured."
             return "Song name not specified. Say 'play a song [name]'.", "Song name not specified."
+
 
         elif intent == "play_liked_song":
             match = re.search(r"play\s+(?:the\s+)?song\s+(.+)\s+from\s+my\s+liked\s+songs", command, re.IGNORECASE)
