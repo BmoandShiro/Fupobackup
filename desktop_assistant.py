@@ -31,7 +31,7 @@ from datetime import datetime
 import psutil
 from system_monitor import SystemMonitor
 import pyqtgraph as pg
-from transformers import pipeline
+from transformers import pipeline, BartForSequenceClassification, BartTokenizer
 import torch
 from openai import OpenAI
 import requests
@@ -98,7 +98,7 @@ class DesktopAssistant(QWidget):
         self.create_widgets()
         self.nlp_choice = self.load_setting("nlp_choice", "Transformers")  # Default to Transformers
         self.spacy_nlp = spacy.load("en_core_web_sm") if self.nlp_choice == "Spacy" else None
-        self.transformers_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=0 if torch.cuda.is_available() else -1) if self.nlp_choice == "Transformers" else None
+        self.transformers_nlp = pipeline("zero-shot-classification", model="./bart_finetuned", tokenizer="./bart_finetuned", device=0 if torch.cuda.is_available() else -1) if self.nlp_choice == "Transformers" else None
         self.mic = sr.Microphone(device_index=1)
         self.initialize_key_listener()
         spotify_client_id = self.load_setting("spotify_client_id", "")
@@ -1195,7 +1195,7 @@ class DesktopAssistant(QWidget):
             # Reinitialize NLP based on new choice
             self.nlp_choice = settings["nlp_choice"]
             self.spacy_nlp = spacy.load("en_core_web_sm") if self.nlp_choice == "Spacy" else None
-            self.transformers_nlp = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", device=0 if torch.cuda.is_available() else -1) if self.nlp_choice == "Transformers" else None
+            self.transformers_nlp = pipeline("zero-shot-classification", model="./bart_finetuned", tokenizer="./bart_finetuned", device=0 if torch.cuda.is_available() else -1) if self.nlp_choice == "Transformers" else None
             QMessageBox.information(self, "Success", "Settings saved successfully.")
         except ValueError as e:
             QMessageBox.critical(self, "Error", f"Invalid refresh interval: {e}")

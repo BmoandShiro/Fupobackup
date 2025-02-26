@@ -1,19 +1,71 @@
 ﻿command,intent,labels
 "play song ain't no rest for the wicked",play_song,0
-"play the song ain't no rest for the wicked now",play_song,0
-"play a song called ain't no rest for the wicked",play_song,0
-"play that tune ain't no rest for the wicked",play_song,0
-"start the song ain't no rest for the wicked",play_song,0
-"play song ain't there no rest for the wicked",play_song,0
-"play ain't no rest for the wicked track",play_song,0
-"play the track ain't no rest for the wicked",play_song,0
+"play song Bohemian Rhapsody",play_song,0
+"play song Sweet Child O' Mine",play_song,0
+"play song Hotel California",play_song,0
+"play song Imagine",play_song,0
+"play song Let It Be",play_song,0
+"play song Stairway to Heaven",play_song,0
+"play song Smells Like Teen Spirit",play_song,0
+"play song Billie Jean",play_song,0
+"play song Like a Rolling Stone",play_song,0
+"play song Hey Jude",play_song,0
+"play song Purple Rain",play_song,0
+"play song Every Breath You Take",play_song,0
+"play song Thunderstruck",play_song,0
+"play song Walk This Way",play_song,0
+"play song Back in Black",play_song,0
+"play song I Will Always Love You",play_song,0
+"play song Losing My Religion",play_song,0
+"play song What's Going On",play_song,0
+"play song My Heart Will Go On",play_song,0
+"play song Livin' on a Prayer",play_song,0
+"play song Under Pressure",play_song,0
+"play song Don't Stop Believin'",play_song,0
+"play song Beat It",play_song,0
+"play song Rocket Man",play_song,0
+"play song Yesterday",play_song,0
+"play song A Hard Day's Night",play_song,0
+"play song Satisfaction",play_song,0
+"play song Bridge Over Troubled Water",play_song,0
+"play song Light My Fire",play_song,0
+"play song Shape of You",play_song,0
+"play song Perfect",play_song,0
+"play song Someone Like You",play_song,0
+"play song Rolling in the Deep",play_song,0
+"play song Hello",play_song,0
 "play Arctic Monkeys radio",play_radio,1
-"play artist radio Arctic Monkeys",play_radio,1
-"start Arctic Monkeys radio station",play_radio,1
-"launch Arctic Monkeys radio stream",play_radio,1
-"play Arctic Monkeys artist radio",play_radio,1
-"start radio for Arctic Monkeys now",play_radio,1
-"play Arctic Monkeys music radio",play_radio,1
+"play artist radio The Beatles",play_radio,1
+"play artist radio Queen",play_radio,1
+"play artist radio Led Zeppelin",play_radio,1
+"play artist radio Nirvana",play_radio,1
+"play artist radio Michael Jackson",play_radio,1
+"play artist radio Rolling Stones",play_radio,1
+"play artist radio U2",play_radio,1
+"play artist radio Madonna",play_radio,1
+"play artist radio Prince",play_radio,1
+"play artist radio The Police",play_radio,1
+"play artist radio AC/DC",play_radio,1
+"play artist radio Whitney Houston",play_radio,1
+"play artist radio R.E.M.",play_radio,1
+"play artist radio Marvin Gaye",play_radio,1
+"play artist radio Celine Dion",play_radio,1
+"play artist radio Bon Jovi",play_radio,1
+"play artist radio David Bowie",play_radio,1
+"play artist radio Elton John",play_radio,1
+"play artist radio The Who",play_radio,1
+"play artist radio Fleetwood Mac",play_radio,1
+"play artist radio Aerosmith",play_radio,1
+"play artist radio Red Hot Chili Peppers",play_radio,1
+"play artist radio Bruce Springsteen",play_radio,1
+"play artist radio Pink Floyd",play_radio,1
+"play artist radio The Eagles",play_radio,1
+"play artist radio Bob Dylan",play_radio,1
+"play artist radio Billy Joel",play_radio,1
+"play artist radio Stevie Wonder",play_radio,1
+"play artist radio Ed Sheeran",play_radio,1
+"play artist radio Adele",play_radio,1
+"play artist radio Coldplay",play_radio,1
 "skip",skip_track,2
 "next track",skip_track,2
 "move to the next song",skip_track,2
@@ -21,6 +73,27 @@
 "go forward a song",skip_track,2
 "advance to the next track",skip_track,2
 "skip ahead",skip_track,2
+"skip this song",skip_track,2
+"move forward",skip_track,2
+"next song please",skip_track,2
+"skip current track",skip_track,2
+"go to next track now",skip_track,2
+"forward one song",skip_track,2
+"skip to the next",skip_track,2
+"next please",skip_track,2
+"move to next",skip_track,2
+"skip now",skip_track,2
+"advance track",skip_track,2
+"next music",skip_track,2
+"skip this tune",skip_track,2
+"jump ahead",skip_track,2
+"forward song",skip_track,2
+"next track immediately",skip_track,2
+"skip forward",skip_track,2
+"move to next tune",skip_track,2
+"next song now",skip_track,2
+"skip right away",skip_track,2
+"advance music",skip_track,2
 "previous",previous_track,3
 "go back",previous_track,3
 "return to the last track",previous_track,3
@@ -28,117 +101,402 @@
 "rewind to previous",previous_track,3
 "go to the last song",previous_track,3
 "step back a track",previous_track,3
+"back one track",previous_track,3
+"previous song",previous_track,3
+"return to last",previous_track,3
+"rewind song",previous_track,3
+"go back one",previous_track,3
+"previous track now",previous_track,3
+"back to previous",previous_track,3
+"last song please",previous_track,3
+"step back now",previous_track,3
+"rewind to last",previous_track,3
+"move backward",previous_track,3
+"backtrack",previous_track,3
+"previous tune",previous_track,3
+"return to prior",previous_track,3
+"previous music",previous_track,3
+"back song now",previous_track,3
+"rewind track",previous_track,3
 "pause",pause_playback,4
 "stop the music",pause_playback,4
 "hold playback",pause_playback,4
 "pause the audio",pause_playback,4
 "halt the song",pause_playback,4
 "freeze the music",pause_playback,4
+"pause now",pause_playback,4
+"stop playback",pause_playback,4
+"hold the tune",pause_playback,4
+"pause this song",pause_playback,4
+"stop music now",pause_playback,4
+"freeze audio",pause_playback,4
+"pause track",pause_playback,4
+"halt playback",pause_playback,4
+"stop the track",pause_playback,4
+"pause music",pause_playback,4
+"hold music",pause_playback,4
+"stop now",pause_playback,4
+"pause audio now",pause_playback,4
+"halt song",pause_playback,4
+"freeze track",pause_playback,4
+"pause tune",pause_playback,4
+"stop audio",pause_playback,4
+"hold track",pause_playback,4
 "resume",resume_playback,5
 "start playing again",resume_playback,5
 "continue the music",resume_playback,5
 "unpause the audio",resume_playback,5
 "resume playback now",resume_playback,5
 "start the music back up",resume_playback,5
+"play again",resume_playback,5
+"continue music",resume_playback,5
+"unpause now",resume_playback,5
+"resume track",resume_playback,5
+"start playback",resume_playback,5
+"continue song",resume_playback,5
+"unpause music",resume_playback,5
+"play music now",resume_playback,5
+"resume audio",resume_playback,5
+"start tune again",resume_playback,5
+"continue playback",resume_playback,5
+"unpause track",resume_playback,5
+"resume tune",resume_playback,5
+"start music now",resume_playback,5
+"continue audio",resume_playback,5
 "like this song",like_song,6
 "favorite this track",like_song,6
 "add this song to my likes",like_song,6
 "love this song",like_song,6
 "mark this track as favorite",like_song,6
 "save this song to favorites",like_song,6
+"like the current song",like_song,6
+"favorite current track",like_song,6
+"add current song to likes",like_song,6
+"love this tune",like_song,6
+"mark current as favorite",like_song,6
+"save current to favorites",like_song,6
+"like it now",like_song,6
+"favorite this music",like_song,6
+"add to my favorites",like_song,6
+"love current song",like_song,6
+"mark as liked",like_song,6
+"save to likes now",like_song,6
+"like this track now",like_song,6
+"favorite tune",like_song,6
+"love the track",like_song,6
+"save song now",like_song,6
+"mark favorite",like_song,6
 "unlike this song",unlike_song,7
 "remove this song from favorites",unlike_song,7
 "unfavorite this track",unlike_song,7
 "dislike this song",unlike_song,7
 "take this song off likes",unlike_song,7
 "remove this track from saved",unlike_song,7
+"unlike current song",unlike_song,7
+"remove from favorites now",unlike_song,7
+"unfavorite current track",unlike_song,7
+"dislike this tune",unlike_song,7
+"take off likes now",unlike_song,7
+"remove saved track",unlike_song,7
+"unlike now",unlike_song,7
+"remove from likes",unlike_song,7
+"unfavorite tune",unlike_song,7
+"dislike current",unlike_song,7
+"take off favorites",unlike_song,7
+"remove this music",unlike_song,7
+"dislike track",unlike_song,7
+"unfavorite song",unlike_song,7
+"remove likes now",unlike_song,7
 "check current song",get_current_song,8
 "what's playing now",get_current_song,8
 "show me the current track",get_current_song,8
 "what song is on",get_current_song,8
 "tell me what's playing",get_current_song,8
 "display current music",get_current_song,8
+"check the song now",get_current_song,8
+"what's the current track",get_current_song,8
+"show current song",get_current_song,8
+"tell me current music",get_current_song,8
+"what's playing right now",get_current_song,8
+"current track info",get_current_song,8
+"show playing song",get_current_song,8
+"check music now",get_current_song,8
+"what song is playing",get_current_song,8
+"show current tune",get_current_song,8
+"tell me playing track",get_current_song,8
+"what's the song now",get_current_song,8
+"current music info",get_current_song,8
 "toggle shuffle",toggle_shuffle,9
 "switch shuffle mode",toggle_shuffle,9
 "turn shuffle on or off",toggle_shuffle,9
 "flip shuffle setting",toggle_shuffle,9
 "change shuffle status",toggle_shuffle,9
 "toggle random play",toggle_shuffle,9
+"switch random mode",toggle_shuffle,9
+"turn random on or off",toggle_shuffle,9
+"flip random setting",toggle_shuffle,9
+"change random status",toggle_shuffle,9
+"toggle shuffle now",toggle_shuffle,9
+"switch shuffle state",toggle_shuffle,9
+"turn shuffle status",toggle_shuffle,9
+"flip shuffle play",toggle_shuffle,9
+"change shuffle play",toggle_shuffle,9
+"toggle random now",toggle_shuffle,9
+"switch random state",toggle_shuffle,9
+"turn random play on",toggle_shuffle,9
 "toggle repeat",toggle_repeat,10
 "switch repeat mode",toggle_repeat,10
 "turn repeat on or off",toggle_repeat,10
 "flip repeat setting",toggle_repeat,10
 "change repeat status",toggle_repeat,10
 "toggle loop play",toggle_repeat,10
+"switch loop mode",toggle_repeat,10
+"turn loop on or off",toggle_repeat,10
+"flip loop setting",toggle_repeat,10
+"change loop status",toggle_repeat,10
+"toggle repeat now",toggle_repeat,10
+"switch repeat state",toggle_repeat,10
+"turn repeat status",toggle_repeat,10
+"flip repeat play",toggle_repeat,10
+"change repeat play",toggle_repeat,10
+"toggle loop now",toggle_repeat,10
+"switch loop state",toggle_repeat,10
+"turn loop play on",toggle_repeat,10
 "create a playlist called Road Trip",create_playlist,11
 "make a new playlist named Road Trip",create_playlist,11
 "start a playlist called Road Trip",create_playlist,11
 "build a playlist named Road Trip",create_playlist,11
 "set up playlist Road Trip",create_playlist,11
 "generate playlist Road Trip",create_playlist,11
+"create playlist Journey",create_playlist,11
+"make new playlist Adventure",create_playlist,11
+"start playlist Vacation",create_playlist,11
+"build playlist Cruise",create_playlist,11
+"set up playlist Drive",create_playlist,11
+"generate playlist Trip",create_playlist,11
+"create playlist called Music Mix",create_playlist,11
+"make playlist named Chill",create_playlist,11
+"start playlist named Party",create_playlist,11
+"build playlist named Relax",create_playlist,11
+"set up playlist named Groove",create_playlist,11
+"generate playlist called Hits",create_playlist,11
+"create playlist Road Journey",create_playlist,11
+"make new playlist Summer",create_playlist,11
+"start playlist Winter",create_playlist,11
+"build playlist named Fun",create_playlist,11
+"set up playlist called Joy",create_playlist,11
+"generate playlist named Bliss",create_playlist,11
+"create playlist called Rhythm",create_playlist,11
+"make playlist named Vibe",create_playlist,11
 "add this song to my Favorites playlist",add_to_playlist,12
 "put this track in my Favorites playlist",add_to_playlist,12
 "include this song in Favorites",add_to_playlist,12
 "add this tune to Favorites list",add_to_playlist,12
 "place this song in my Favorites",add_to_playlist,12
 "insert this track into Favorites",add_to_playlist,12
+"add song to Favorites now",add_to_playlist,12
+"put track in Favorites list",add_to_playlist,12
+"include tune in Favorites",add_to_playlist,12
+"add this music to Favorites",add_to_playlist,12
+"place song in Favorites playlist",add_to_playlist,12
+"insert track into Favorites now",add_to_playlist,12
+"add current song to Favorites",add_to_playlist,12
+"put this tune in Favorites",add_to_playlist,12
+"include music in Favorites list",add_to_playlist,12
+"add song to my Favorites now",add_to_playlist,12
+"place track in Favorites",add_to_playlist,12
+"insert tune into Favorites",add_to_playlist,12
+"add this to Favorites playlist",add_to_playlist,12
+"put song in Favorites list",add_to_playlist,12
+"add track to Favorites now",add_to_playlist,12
+"place music in Favorites",add_to_playlist,12
+"insert song into Favorites list",add_to_playlist,12
+"add tune to Favorites playlist",add_to_playlist,12
+"put this in Favorites now",add_to_playlist,12
 "delete playlist Road Trip",delete_playlist,13
 "remove playlist Road Trip",delete_playlist,13
 "erase playlist Road Trip",delete_playlist,13
 "delete Road Trip playlist",delete_playlist,13
 "remove the Road Trip list",delete_playlist,13
 "erase my Road Trip playlist",delete_playlist,13
+"delete playlist Journey",delete_playlist,13
+"remove playlist Adventure",delete_playlist,13
+"erase playlist Vacation",delete_playlist,13
+"delete Cruise playlist",delete_playlist,13
+"remove the Drive list",delete_playlist,13
+"erase my Trip playlist",delete_playlist,13
+"delete playlist Music Mix",delete_playlist,13
+"remove playlist Chill",delete_playlist,13
+"erase playlist Party",delete_playlist,13
+"delete Relax playlist",delete_playlist,13
+"remove the Groove list",delete_playlist,13
+"erase my Hits playlist",delete_playlist,13
+"delete playlist Road Journey",delete_playlist,13
+"remove playlist Summer",delete_playlist,13
+"erase playlist Winter",delete_playlist,13
+"delete playlist Fun",delete_playlist,13
+"remove playlist Joy",delete_playlist,13
+"erase playlist Bliss",delete_playlist,13
+"delete playlist Rhythm",delete_playlist,13
+"remove playlist Vibe",delete_playlist,13
 "set Spotify volume to 50%",set_volume,14
 "adjust Spotify volume to 50 percent",set_volume,14
 "change Spotify volume to 50%",set_volume,14
 "fix Spotify volume at 50%",set_volume,14
 "set music volume to 50% on Spotify",set_volume,14
 "adjust audio to 50% in Spotify",set_volume,14
+"set Spotify volume to 75%",set_volume,14
+"adjust volume to 25% on Spotify",set_volume,14
+"change music volume to 90%",set_volume,14
+"fix audio at 10% in Spotify",set_volume,14
+"set Spotify to 60%",set_volume,14
+"adjust Spotify to 30%",set_volume,14
+"set volume to 80% on Spotify",set_volume,14
+"adjust music to 15% in Spotify",set_volume,14
+"change audio to 45%",set_volume,14
+"fix volume at 95% on Spotify",set_volume,14
 "increase Spotify volume",increase_volume,15
 "raise Spotify volume",increase_volume,15
 "make Spotify louder",increase_volume,15
 "boost Spotify volume",increase_volume,15
 "turn up Spotify audio",increase_volume,15
 "raise the music volume on Spotify",increase_volume,15
+"increase Spotify volume by 10%",increase_volume,15
+"raise volume louder",increase_volume,15
+"make music louder on Spotify",increase_volume,15
+"boost audio up",increase_volume,15
+"turn up the volume",increase_volume,15
+"raise Spotify music",increase_volume,15
+"increase volume by 20%",increase_volume,15
+"boost Spotify louder",increase_volume,15
+"make audio higher",increase_volume,15
+"turn up music volume",increase_volume,15
 "decrease Spotify volume",decrease_volume,16
 "lower Spotify volume",decrease_volume,16
 "make Spotify quieter",decrease_volume,16
 "reduce Spotify volume",decrease_volume,16
 "turn down Spotify audio",decrease_volume,16
 "lower the music volume on Spotify",decrease_volume,16
+"decrease Spotify volume by 10%",decrease_volume,16
+"lower volume quieter",decrease_volume,16
+"make music quieter on Spotify",decrease_volume,16
+"reduce audio down",decrease_volume,16
+"turn down the volume",decrease_volume,16
+"lower Spotify music",decrease_volume,16
+"decrease volume by 20%",decrease_volume,16
+"reduce Spotify quieter",decrease_volume,16
+"make audio lower",decrease_volume,16
+"turn down music volume",decrease_volume,16
 "recommend songs like Bohemian Rhapsody",get_recommendations,17
-"find tracks similar to Bohemian Rhapsody",get_recommendations,17
-"suggest songs like Bohemian Rhapsody",get_recommendations,17
-"find music like Bohemian Rhapsody",get_recommendations,17
-"recommend tunes similar to Bohemian Rhapsody",get_recommendations,17
-"suggest tracks like Bohemian Rhapsody",get_recommendations,17
+"find tracks similar to Sweet Child O' Mine",get_recommendations,17
+"suggest songs like Hotel California",get_recommendations,17
+"find music like Imagine",get_recommendations,17
+"recommend tunes similar to Let It Be",get_recommendations,17
+"suggest tracks like Stairway to Heaven",get_recommendations,17
+"recommend songs like Smells Like Teen Spirit",get_recommendations,17
+"find tracks like Billie Jean",get_recommendations,17
+"suggest music like Like a Rolling Stone",get_recommendations,17
+"find tunes similar to Hey Jude",get_recommendations,17
+"recommend tracks like Purple Rain",get_recommendations,17
+"suggest songs like Every Breath You Take",get_recommendations,17
+"recommend music like Thunderstruck",get_recommendations,17
+"find tracks like Walk This Way",get_recommendations,17
+"suggest tunes like Back in Black",get_recommendations,17
+"recommend songs like I Will Always Love You",get_recommendations,17
+"find tracks like Losing My Religion",get_recommendations,17
+"suggest music like What's Going On",get_recommendations,17
+"find tunes like My Heart Will Go On",get_recommendations,17
+"recommend tracks like Livin' on a Prayer",get_recommendations,17
 "play music for 30 minutes then stop",timed_playback,18
 "play songs for half an hour then pause",timed_playback,18
 "listen to music for 30 minutes and stop",timed_playback,18
 "play tunes for 30 mins then halt",timed_playback,18
 "stream music for 30 minutes then quit",timed_playback,18
 "play audio for half an hour then stop",timed_playback,18
+"play music for 45 minutes then stop",timed_playback,18
+"listen to songs for 1 hour then pause",timed_playback,18
+"stream tunes for 20 mins then halt",timed_playback,18
+"play audio for 15 minutes then quit",timed_playback,18
+"play music for 60 minutes then stop",timed_playback,18
+"listen to music for 25 mins then pause",timed_playback,18
+"play songs for 40 minutes then stop",timed_playback,18
+"stream music for 50 mins then halt",timed_playback,18
+"play audio for 10 minutes then quit",timed_playback,18
 "weather",weather,19
 "what's the weather like",weather,19
 "check the weather forecast",weather,19
 "what's the weather today",weather,19
 "tell me the current weather",weather,19
 "show today's weather",weather,19
+"weather now",weather,19
+"what's the forecast today",weather,19
+"check current weather",weather,19
+"tell me today's weather",weather,19
+"show weather update",weather,19
+"weather forecast now",weather,19
+"what's the weather right now",weather,19
+"check weather today",weather,19
+"show weather forecast",weather,19
+"tell current weather now",weather,19
+"what's today's forecast",weather,19
+"check the weather now",weather,19
 "start notepad",start_program,20
 "open notepad",start_program,20
 "launch notepad application",start_program,20
 "run notepad",start_program,20
 "start the notepad program",start_program,20
 "open Notepad app",start_program,20
+"start Word",start_program,20
+"open Excel",start_program,20
+"launch PowerPoint",start_program,20
+"run Chrome",start_program,20
+"start Firefox",start_program,20
+"open Edge",start_program,20
+"launch VS Code",start_program,20
+"run Python",start_program,20
+"start Spotify",start_program,20
+"open Discord",start_program,20
+"launch Zoom",start_program,20
+"run Teams",start_program,20
+"start Outlook",start_program,20
+"open Slack",start_program,20
+"launch Skype",start_program,20
+"run Adobe",start_program,20
+"start OneNote",start_program,20
+"open VLC",start_program,20
 "check system status",check_system,21
 "show system stats",check_system,21
 "view system information",check_system,21
 "check system performance",check_system,21
 "display system metrics",check_system,21
 "report system status",check_system,21
+"show system usage",check_system,21
+"view system performance",check_system,21
+"check CPU and RAM",check_system,21
+"display system stats now",check_system,21
+"report system info",check_system,21
+"show system metrics",check_system,21
+"view CPU usage",check_system,21
+"check system now",check_system,21
+"show RAM usage",check_system,21
+"view disk performance",check_system,21
+"check system metrics now",check_system,21
+"report CPU stats",check_system,21
 "take screenshot",take_screenshot,22
 "capture screen",take_screenshot,22
 "snap a screenshot",take_screenshot,22
 "grab a screen capture",take_screenshot,22
 "take a screen shot",take_screenshot,22
 "capture the screen now",take_screenshot,22
+"take screenshot now",take_screenshot,22
+"capture screen immediately",take_screenshot,22
+"snap screenshot quick",take_screenshot,22
+"grab screen capture now",take_screenshot,22
+"take shot of screen",take_screenshot,22
+"capture screen shot",take_screenshot,22
+"take desktop screenshot",take_screenshot,22
+"capture display now",take_screenshot,22
+"snap screen quick",take_screenshot,22
+"grab desktop capture",take_screenshot,22
+"take screen shot now",take_screenshot,22
+"capture monitor immediately",take_screenshot,22
