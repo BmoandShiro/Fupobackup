@@ -137,7 +137,7 @@
               "RelativeDocumentMoniker": "desktop_assistant.py",
               "ToolTip": "C:\\Users\\BMO\\source\\repos\\Fupobackup\\desktop_assistant.py",
               "RelativeToolTip": "desktop_assistant.py",
-              "ViewState": "AQIAAL4CAAAAAAAAAAAzwOcCAAAAAAAA",
+              "ViewState": "AQIAAAkCAAAAAAAAAAAiwBECAAAMAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-03-12T00:51:58.719Z",
               "EditorCaption": ""
@@ -152,8 +152,7 @@
               "RelativeToolTip": "commands_dataset.csv",
               "ViewState": "AQIAAKwDAAAAAAAAAAAAwGoEAAAnAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002120|",
-              "WhenOpened": "2025-02-26T00:17:31.398Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-02-26T00:17:31.398Z"
             },
             {
               "$type": "Document",
@@ -225,8 +224,7 @@
               "RelativeToolTip": "main.py",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAABUAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2024-03-12T00:51:41.982Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-03-12T00:51:41.982Z"
             }
           ]
         }

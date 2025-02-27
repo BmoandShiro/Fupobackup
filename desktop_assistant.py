@@ -282,6 +282,18 @@ class DesktopAssistant(QWidget):
             self.ram_data.clear()
             self.disk_data.clear()
             self.time_data.clear()
+            
+    @staticmethod
+    def parse_song_and_artist(text):
+        # Look for " by " (case insensitive) to split the song and artist.
+        lower_text = text.lower()
+        if " by " in lower_text:
+            parts = text.split(" by ", 1)
+            song = parts[0].strip()
+            artist = parts[1].strip()
+            return song, artist
+        return text.strip(), None
+
 
     def update_system_stats(self, cpu_percent, ram_percent, ram_used, ram_total, disk_percent):
         """Update system monitoring stats and charts from thread."""
@@ -478,14 +490,6 @@ class DesktopAssistant(QWidget):
         else:
             return f"Could not find a close match for '{spoken_name}'. Please try again."
 
-    def confirm_start_program(self, best_match):
-        reply = QMessageBox.question(self, "Confirm", f"Did you mean '{best_match}'?",
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        if reply == QMessageBox.StandardButton.Yes:
-            # If the user confirms, start the program
-            self.start_program(best_match)
-        else:
-            self.updateLabelSignal.emit("Operation cancelled by user.")
             
     def extract_entities(self, command):
         doc = self.spacy_nlp(command) if self.spacy_nlp else None
@@ -522,8 +526,9 @@ class DesktopAssistant(QWidget):
         # Pre-filter with trigger words and entities
         if any(word in command_lower for word in ["weather", "forecast", "alerts"]) or entities["location"]:
             pre_filtered_intent = "weather"
-        elif any(word in command_lower for word in ["start", "launch", "open"]) and any(word in command_lower for word in ["notepad", "word", "excel", "chrome", "firefox", "spotify", "discord", "zoom", "teams", "outlook", "slack", "skype", "adobe", "onenote", "vlc", "explorer", "terminal", "calculator", "paint", "safari", "gimp", "audacity", "blender", "opera", "thunderbird", "libreoffice", "inkscape"]):
+        elif any(word in command_lower for word in ["start", "launch", "open"]):
             pre_filtered_intent = "start_program"
+
         elif "play" in command_lower and "song" in command_lower and "liked" in command_lower:
             pre_filtered_intent = "play_liked_song"
         elif "play" in command_lower and "song" in command_lower or entities["song"]:
@@ -722,24 +727,39 @@ class DesktopAssistant(QWidget):
             match = re.search(r"start\s+(.+)", command)
             if match:
                 program_name = match.group(1).strip()
+                # Check if the user provided a generic term
+                if program_name.lower() in ["program", "application", "app"]:
+                    return "Please specify which program to start (e.g., 'start Chrome' or 'start Fallout Shelter').", "Please specify which program to start."
                 return self.start_program_with_confirmation(program_name)
             return "Program not specified.", "Program not specified."
+
 
         elif intent == "play_song":
             match = re.search(r"play\s+(?:a\s+)?song\s+(.+)", command, re.IGNORECASE)
             if match:
-                # Use the entity if available, otherwise the regex capture; default to empty string if both are None.
-                name = (entities.get("song") or match.group(1) or "").strip()
+                # First try using an entity extracted by spaCy; if not available, use the regex capture.
+                full_song_text = (entities.get("song") or match.group(1) or "").strip()
+                # Parse out the song name and artist if provided.
+                song_name, artist = self.parse_song_and_artist(full_song_text)
+
+        
+                if artist:
+                    # If an artist was detected, you might combine both for a more specific search.
+                    search_query = f"{song_name} {artist}"
+                else:
+                    search_query = song_name
+        
                 if self.spotify_controller:
-                    play_result = self.spotify_controller.play_song(name)
-                    logger.info(f"Attempting to play song: {name}, Result: {play_result}")
+                    play_result = self.spotify_controller.play_song(search_query)
+                    logger.info(f"Attempting to play song: {search_query}, Result: {play_result}")
                     if isinstance(play_result, str):
                         return play_result, play_result
                     else:
-                        return f"Playing song {name} on Spotify", f"Playing song {name} on Spotify"
+                        return f"Playing song {search_query} on Spotify", f"Playing song {search_query} on Spotify"
                 else:
                     return "Spotify not configured. Check authentication.", "Spotify not configured."
             return "Song name not specified. Say 'play a song [name]'.", "Song name not specified."
+
 
 
         elif intent == "play_liked_song":
@@ -826,6 +846,8 @@ class DesktopAssistant(QWidget):
                 else:
                     return "Playing your Daylist on Spotify", "Playing your Daylist on Spotify"
             return "Spotify not configured. Check authentication.", "Spotify not configured."
+        
+
 
         elif intent == "like_song":
             if self.spotify_controller:
@@ -1028,10 +1050,9 @@ class DesktopAssistant(QWidget):
             return f"Grok error: {e}", f"Grok error."
 
     def start_program(self, program_name):
-        # Check if the program_name exists in the list of executables
+        # Look up the executable path in the dictionary
         if program_name in self.executables:
             try:
-                # Start the program
                 subprocess.Popen(self.executables[program_name], shell=True)
                 return f"Started {program_name.capitalize()}."
             except Exception as e:
@@ -1039,7 +1060,7 @@ class DesktopAssistant(QWidget):
                 return f"Error starting {program_name.capitalize()}: {e}"
         else:
             return f"{program_name.capitalize()} not found in the list of executables."
-
+        
     def start_firefox_browser(self):
         # This method starts the Firefox browser with the specified options and service
         geckodriver_path = self.load_setting("geckodriver_path", "path_to_geckodriver")
@@ -1329,11 +1350,22 @@ class DesktopAssistant(QWidget):
             pass
         self.initialize_reset_macro()
 
+    def start_program_with_confirmation(self, spoken_name):
+        # Use fuzzy matching to get the best match from the scanned executables
+        best_match, best_match_score = process.extractOne(spoken_name, self.executables.keys())
+        # If the best match score is perfect, start it directly
+        if best_match_score == 100:
+            return self.start_program(best_match)
+        # If the match is close enough, ask the user for confirmation
+        elif best_match_score >= 84:
+            self.confirmationSignal.emit(best_match)
+        else:
+            return f"Could not find a close match for '{spoken_name}'. Please try again."
+
     def start_program(self, program_name):
-        # Check if the program_name exists in the list of executables
+        # Look up the executable path in the dictionary
         if program_name in self.executables:
             try:
-                # Start the program
                 subprocess.Popen(self.executables[program_name], shell=True)
                 return f"Started {program_name.capitalize()}."
             except Exception as e:
@@ -1342,19 +1374,6 @@ class DesktopAssistant(QWidget):
         else:
             return f"{program_name.capitalize()} not found in the list of executables."
 
-    def start_program_with_confirmation(self, spoken_name):
-        # Find the best match for the spoken name
-        best_match, best_match_score = process.extractOne(spoken_name, self.executables.keys())
-
-        # If the best match score is 100, start the program directly
-        if best_match_score == 100:
-            return self.start_program(best_match)
-        # If the match is not perfect, ask for confirmation
-        elif best_match_score >= 84:
-            # Emit a signal to show the confirmation dialog in the main thread
-            self.confirmationSignal.emit(best_match)
-        else:
-            return f"Could not find a close match for '{spoken_name}'. Please try again."
 
     def start_audio_ducking(self):
         if not self.audio_ducking_enabled:
@@ -1399,77 +1418,7 @@ class DesktopAssistant(QWidget):
     
         return "\n".join(status_messages)
 
-    def start_firefox_browser(self):
-        # This method starts the Firefox browser with the specified options and service
-        geckodriver_path = self.load_setting("geckodriver_path", "path_to_geckodriver")
-        firefox_path = self.load_setting("firefox_path", "path_to_firefox")
     
-        self.firefox_service = FirefoxService(executable_path=geckodriver_path)
-        self.firefox_options = webdriver.FirefoxOptions()
-        self.firefox_options.binary_location = firefox_path
-
-        try:
-            self.firefox_browser = webdriver.Firefox(service=self.firefox_service, options=self.firefox_options)
-            print("Firefox WebDriver started successfully.")
-        except Exception as e:
-            logger.error(f"Failed to start Firefox WebDriver: {e}")
-            print(f"Failed to start Firefox WebDriver: {e}")
-
-    def update_progress_bar(self, value):
-        # Calculate percentage and ensure it's an integer
-        percentage = int(value)  # Convert value to int to avoid TypeError
-
-        # Schedule the UI update to be run in the main thread
-        self.progress_bar_set(percentage, f"{percentage}%")
-
-    def progress_bar_set(self, value, text):
-        # Ensure GUI updates are made in the main thread
-        if self.progress is not None and self.progress_label is not None:
-            self.progress.setValue(value)  # Update the progress bar's value
-            self.progress_label.setText(text)  # Update the progress label's text
-
-    def on_scan(self):
-        # Clear the existing executables before scanning
-        self.executables.clear()
-    
-        # Start the scanning process in a new thread
-        threading.Thread(target=self.scan_process, daemon=True).start()
-
-    def scan_process(self):
-        # Initialize COM library for the new thread
-        pythoncom.CoInitialize()
-
-        paths_to_scan = [
-            os.environ['ProgramFiles'],
-            os.environ['ProgramFiles(x86)'],
-            os.environ['APPDATA'] + '\\Microsoft\\Windows\\Start Menu\\Programs',
-            "D:\\",
-            "F:\\",
-        ]
-        total_paths = len(paths_to_scan)
-    
-        for index, path in enumerate(paths_to_scan, start=1):
-            executables_found = self.find_executables(path)
-            self.executables.update(executables_found)
-        
-            # Update the UI with the progress in a thread-safe manner
-            self.update_progress_bar((index / total_paths) * 100)
-    
-        # Find shortcuts and update executables with correct paths
-        self.desktop_shortcuts = self.find_shortcuts(os.path.join(os.environ['USERPROFILE'], 'Desktop'))
-        for name, path in self.desktop_shortcuts.items():
-            self.executables[name] = path
-    
-        # Save the updated executables dictionary to a file
-        DesktopAssistant.save_executables(self.executables)  # Use class name for static method
-        print("Saved executables to executables.json.")
-        
-        # Reset the progress bar and update the label to indicate completion
-        self.update_progress_bar(100)
-        QTimer.singleShot(0, lambda: self.label.setText("Scan complete!"))
-        
-        pythoncom.CoUninitialize()
-
     def find_shortcuts(self, directory):
         shortcuts = {}
         for file in os.listdir(directory):
@@ -1493,6 +1442,9 @@ class DesktopAssistant(QWidget):
             logger.error(f"Error reading shortcut: {e}")
             print(f"Error reading shortcut: {e}")
             return None
+        
+    
+
 
 def main():
     app = QApplication(sys.argv)
