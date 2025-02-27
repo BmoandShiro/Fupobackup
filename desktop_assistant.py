@@ -83,6 +83,7 @@ class DesktopAssistant(QWidget):
         self.ducking_stop_event = threading.Event()
 
         self.load_settings()
+        self.training_mode_enabled = self.load_setting("training_mode", False)
         asana_token = self.load_setting("asana_token", "")
         self.client = asana.Client.access_token(asana_token) if asana_token else None
 
@@ -427,15 +428,21 @@ class DesktopAssistant(QWidget):
         try:
             command = self.listen_command()
             if command:
-                response = self.process_command(command)  # Use NLP for processing
+                response = self.process_command(command)
                 if isinstance(response, tuple) and len(response) == 2:
                     display_message, spoken_message = response
                 else:
                     display_message, spoken_message = response, response
                 self.speak(spoken_message)
                 self.updateLabelSignal.emit(display_message)
+                # Training mode: ask the user to confirm
+                if self.training_mode_enabled:
+                    logger.info("Training mode enabled: prompting for confirmation.")
+                    self.confirm_training_example(command, display_message)
         finally:
             pythoncom.CoUninitialize()
+
+
 
     def speak(self, text):
         engine = pyttsx3.init()
@@ -1243,6 +1250,13 @@ class DesktopAssistant(QWidget):
         self.refresh_interval.setCurrentText(str(current_interval))
         layout.addWidget(self.refresh_interval)
 
+        # In open_settings_window(), add after the existing settings:
+        layout.addWidget(QLabel("Enable Training Mode"))
+        self.training_mode_checkbox = QCheckBox()
+        self.training_mode_checkbox.setChecked(self.load_setting("training_mode", False))
+        layout.addWidget(self.training_mode_checkbox)
+
+
         # Save Button
         save_button = QPushButton("Save Settings")
         save_button.clicked.connect(self.save_settings)
@@ -1268,10 +1282,12 @@ class DesktopAssistant(QWidget):
                 "openai_api_key": self.openai_key_entry.text(),
                 "xai_api_key": self.xai_key_entry.text(),
                 "screenshot_dir": self.screenshot_dir_entry.text(),
+                "training_mode": self.training_mode_checkbox.isChecked(),
                 "system_refresh_interval": int(self.refresh_interval.currentText()) * 1000
             }
             with open("settings.json", "w") as file:
                 json.dump(settings, file, indent=4)
+            # Optionally update any state that can be reloaded dynamically:
             self.load_settings()
             self.system_monitor.set_interval(settings["system_refresh_interval"])
             self.nlp_choice = settings["nlp_choice"]
@@ -1282,7 +1298,8 @@ class DesktopAssistant(QWidget):
                 try:
                     model_path = "./distilbert_finetuned"
                     self.transformers_tokenizer = DistilBertTokenizer.from_pretrained(model_path)
-                    self.transformers_model = DistilBertForSequenceClassification.from_pretrained(model_path).to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+                    self.transformers_model = DistilBertForSequenceClassification.from_pretrained(model_path).to(
+                        torch.device("cuda" if torch.cuda.is_available() else "cpu"))
                     logger.info("Transformers model initialized with fine-tuned distilbert-base-uncased on GPU/CPU")
                 except Exception as e:
                     logger.error(f"Failed to initialize Transformers: {e}")
@@ -1290,11 +1307,14 @@ class DesktopAssistant(QWidget):
                     self.spacy_nlp = spacy.load("en_core_web_sm")
                     self.transformers_model = None
                     self.transformers_tokenizer = None
-            QMessageBox.information(self, "Success", "Settings saved successfully.")
+
+            QMessageBox.information(self, "Success", "Settings saved successfully. The application will now restart to apply new settings.")
+            self.reset_application()  # Restart the application to reload all new settings.
         except ValueError as e:
             QMessageBox.critical(self, "Error", f"Invalid refresh interval: {e}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")
+
             
     def open_weather_dashboard(self):
         """Opens the Weather Dashboard window."""
@@ -1417,6 +1437,29 @@ class DesktopAssistant(QWidget):
                 status_messages.append(f"{app.capitalize()} not found in the list of executables.")
     
         return "\n".join(status_messages)
+    
+    def confirm_training_example(self, command, interpreted_intent):
+        dlg = QMessageBox(self)
+        dlg.setWindowTitle("Confirm Interpretation")
+        dlg.setText(f"Did I correctly interpret your command:\n\n\"{command}\"\nas:\n\"{interpreted_intent}\"?")
+        dlg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        dlg.setDefaultButton(QMessageBox.StandardButton.Yes)
+
+        response = dlg.exec()
+        if response == QMessageBox.Yes:
+            # Log the confirmed example
+            with open("training_data.csv", "a", encoding="utf-8") as f:
+                f.write(f"\"{command}\",\"{interpreted_intent}\"\n")
+            return True
+        else:
+            # Prompt for the correct intent from the user
+            correct_intent, ok = QInputDialog.getText(self, "Correct Intent", "Enter the correct intent:")
+            if ok and correct_intent:
+                with open("training_data.csv", "a", encoding="utf-8") as f:
+                    f.write(f"\"{command}\",\"{correct_intent.strip()}\"\n")
+            return False
+
+
 
     
     def find_shortcuts(self, directory):

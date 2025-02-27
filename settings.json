@@ -13,5 +13,6 @@
     "openai_api_key": "",
     "xai_api_key": "",
     "screenshot_dir": "C:\\Users\\BMO\\Pictures\\Screenshots",
+    "training_mode": false,
     "system_refresh_interval": 1000
 }
