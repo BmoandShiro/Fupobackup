@@ -320,6 +320,19 @@ class DesktopAssistant(QWidget):
         self.chat_display = QTextEdit(self.chat_tab)
         self.chat_display.setReadOnly(True)
         self.chat_tab_layout.addWidget(self.chat_display)
+        
+        # Chat input and send button
+        chat_input_layout = QVBoxLayout()
+        self.chat_input = QLineEdit(self.chat_tab)
+        self.chat_input.setPlaceholderText("Type your question here...")
+        self.chat_input.returnPressed.connect(self.send_chat_message)
+        chat_input_layout.addWidget(self.chat_input)
+        
+        chat_send_button = QPushButton("Send", self.chat_tab)
+        chat_send_button.clicked.connect(self.send_chat_message)
+        chat_input_layout.addWidget(chat_send_button)
+        
+        self.chat_tab_layout.addLayout(chat_input_layout)
         self.tabs.addTab(self.chat_tab, "Chat")
 
         # Tools Tab (new content for Feature 11)
@@ -1166,6 +1179,88 @@ class DesktopAssistant(QWidget):
             logger.error(f"Grok error: {e}")
             return f"Grok error: {e}", f"Grok error."
 
+    def ask_cursor_cli(self, query):
+        """Use Cursor CLI (agentchat) instead of OpenAI API. Requires Cursor subscription."""
+        try:
+            # Try 'agentchat' command (Cursor CLI)
+            result = subprocess.run(
+                ["agentchat", query],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                shell=False
+            )
+            if result.returncode == 0:
+                response_text = result.stdout.strip()
+                if response_text:
+                    logger.info("Cursor CLI response received successfully.")
+                    return response_text, response_text
+                else:
+                    return "Cursor CLI returned empty response.", "Empty response from Cursor CLI."
+            else:
+                error_msg = result.stderr.strip() or "Unknown error"
+                logger.error(f"Cursor CLI error (exit code {result.returncode}): {error_msg}")
+                return f"Cursor CLI error: {error_msg}", f"Cursor CLI error: {error_msg}"
+        except FileNotFoundError:
+            error_msg = "Cursor CLI (agentchat) not found. Please install it: curl https://cursor.com/install -fsSL | bash"
+            logger.error(error_msg)
+            return error_msg, error_msg
+        except subprocess.TimeoutExpired:
+            error_msg = "Cursor CLI request timed out (60s limit)."
+            logger.error(error_msg)
+            return error_msg, error_msg
+        except Exception as e:
+            error_msg = f"Cursor CLI call failed: {e}"
+            logger.error(error_msg)
+            return error_msg, error_msg
+
+    def ask_ai(self, query):
+        """Route AI query to the selected AI provider."""
+        ai_choice = self.load_setting("ai_choice", "ChatGPT")
+        
+        if ai_choice == "Cursor CLI":
+            return self.ask_cursor_cli(query)
+        elif ai_choice == "Grok":
+            return self.ask_grok(query)
+        elif ai_choice == "Compare Both":
+            # Get responses from both ChatGPT and Grok
+            chatgpt_response = self.ask_chatgpt(query)
+            grok_response = self.ask_grok(query)
+            combined = f"ChatGPT:\n{chatgpt_response[0]}\n\nGrok:\n{grok_response[0]}"
+            return combined, combined
+        else:  # Default to ChatGPT
+            return self.ask_chatgpt(query)
+
+    def send_chat_message(self):
+        """Handle sending a message in the Chat tab."""
+        query = self.chat_input.text().strip()
+        if not query:
+            return
+        
+        # Display user message
+        self.chat_display.append(f"<b>You:</b> {query}")
+        self.chat_input.clear()
+        
+        # Show thinking indicator
+        self.chat_display.append("<i>Thinking...</i>")
+        QApplication.processEvents()  # Update UI immediately
+        
+        # Get AI response in a thread to avoid blocking UI
+        def get_response():
+            try:
+                display_msg, spoken_msg = self.ask_ai(query)
+                # Remove "Thinking..." and add response
+                current_text = self.chat_display.toPlainText()
+                if current_text.endswith("Thinking..."):
+                    current_text = current_text.rsplit("Thinking...", 1)[0]
+                    self.chat_display.setPlainText(current_text)
+                self.chat_display.append(f"<b>Assistant:</b> {display_msg}")
+            except Exception as e:
+                logger.error(f"Error getting AI response: {e}")
+                self.chat_display.append(f"<b>Error:</b> {str(e)}")
+        
+        threading.Thread(target=get_response, daemon=True).start()
+
     def start_program(self, program_name):
         # Look up the executable path in the dictionary
         if program_name in self.executables:
@@ -1330,9 +1425,15 @@ class DesktopAssistant(QWidget):
         # AI Selection Dropdown
         layout.addWidget(QLabel("Preferred AI"))
         self.ai_choice = QComboBox()
-        self.ai_choice.addItems(["ChatGPT", "Grok", "Compare Both"])
+        self.ai_choice.addItems(["ChatGPT", "Grok", "Cursor CLI", "Compare Both"])
         self.ai_choice.setCurrentText(self.load_setting("ai_choice", "ChatGPT"))
         layout.addWidget(self.ai_choice)
+        
+        # Cursor CLI Info Label
+        cursor_info_label = QLabel("Note: Cursor CLI requires a Cursor subscription and installation.\nInstall: curl https://cursor.com/install -fsSL | bash")
+        cursor_info_label.setWordWrap(True)
+        cursor_info_label.setStyleSheet("color: #888; font-size: 10px;")
+        layout.addWidget(cursor_info_label)
 
         # OpenAI API Key
         layout.addWidget(QLabel("OpenAI API Key"))
