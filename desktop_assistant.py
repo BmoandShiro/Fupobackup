@@ -79,7 +79,10 @@ class DesktopAssistant(QWidget):
     def __init__(self, window):
         super().__init__()
         self.window = window
-        self.configure_dark_theme()
+
+        # Load theme preference early and apply it
+        self.current_theme = self.load_setting("theme", "Dark")
+        self.apply_theme(self.current_theme)
 
         self.system_monitor = SystemMonitor(interval=5000)
         self.system_monitor.stats_updated.connect(self.update_system_stats)
@@ -177,13 +180,52 @@ class DesktopAssistant(QWidget):
         except Exception as e:
             logger.error(f"Failed to start Firefox WebDriver: {e}")
             print(f"Failed to start Firefox WebDriver: {e}")
-            
-    def configure_dark_theme(self):
+
+    def apply_theme(self, theme_name: str):
+        """Apply a named theme to the Qt application."""
         QApplication.setStyle(QStyleFactory.create("Fusion"))
-        dark_palette = QPalette()
-        dark_palette.setColor(QPalette.ColorRole.Window, QColor("#333"))
-        dark_palette.setColor(QPalette.ColorRole.WindowText, QColor('white'))
-        QApplication.setPalette(dark_palette)
+        palette = QPalette()
+
+        if theme_name == "Nord Dark":
+            # Nord-inspired dark theme
+            palette.setColor(QPalette.ColorRole.Window, QColor("#2E3440"))
+            palette.setColor(QPalette.ColorRole.WindowText, QColor("#ECEFF4"))
+            palette.setColor(QPalette.ColorRole.Base, QColor("#3B4252"))
+            palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#434C5E"))
+            palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("#ECEFF4"))
+            palette.setColor(QPalette.ColorRole.ToolTipText, QColor("#2E3440"))
+            palette.setColor(QPalette.ColorRole.Text, QColor("#ECEFF4"))
+            palette.setColor(QPalette.ColorRole.Button, QColor("#4C566A"))
+            palette.setColor(QPalette.ColorRole.ButtonText, QColor("#ECEFF4"))
+            palette.setColor(QPalette.ColorRole.Highlight, QColor("#88C0D0"))
+            palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#2E3440"))
+        elif theme_name == "High Contrast Dark":
+            palette.setColor(QPalette.ColorRole.Window, QColor("#000000"))
+            palette.setColor(QPalette.ColorRole.WindowText, QColor("#FFFFFF"))
+            palette.setColor(QPalette.ColorRole.Base, QColor("#121212"))
+            palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#1E1E1E"))
+            palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("#FFFFFF"))
+            palette.setColor(QPalette.ColorRole.ToolTipText, QColor("#000000"))
+            palette.setColor(QPalette.ColorRole.Text, QColor("#FFFFFF"))
+            palette.setColor(QPalette.ColorRole.Button, QColor("#1E1E1E"))
+            palette.setColor(QPalette.ColorRole.ButtonText, QColor("#FFFFFF"))
+            palette.setColor(QPalette.ColorRole.Highlight, QColor("#00BFFF"))
+            palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#000000"))
+        else:
+            # Default Dark
+            palette.setColor(QPalette.ColorRole.Window, QColor("#333333"))
+            palette.setColor(QPalette.ColorRole.WindowText, QColor("#FFFFFF"))
+            palette.setColor(QPalette.ColorRole.Base, QColor("#222222"))
+            palette.setColor(QPalette.ColorRole.AlternateBase, QColor("#3C3C3C"))
+            palette.setColor(QPalette.ColorRole.ToolTipBase, QColor("#FFFFFF"))
+            palette.setColor(QPalette.ColorRole.ToolTipText, QColor("#000000"))
+            palette.setColor(QPalette.ColorRole.Text, QColor("#FFFFFF"))
+            palette.setColor(QPalette.ColorRole.Button, QColor("#444444"))
+            palette.setColor(QPalette.ColorRole.ButtonText, QColor("#FFFFFF"))
+            palette.setColor(QPalette.ColorRole.Highlight, QColor("#4C8AFF"))
+            palette.setColor(QPalette.ColorRole.HighlightedText, QColor("#FFFFFF"))
+
+        QApplication.setPalette(palette)
 
     def create_widgets(self):
         self.layout = QVBoxLayout(self)
@@ -292,7 +334,36 @@ class DesktopAssistant(QWidget):
         self.tools_label = QLabel("Tools output will appear here.", self.tools_tab)
         self.tools_tab_layout.addWidget(self.tools_label)
 
+        # Settings Tab (in-app settings, starting with themes)
+        self.settings_tab = QWidget()
+        self.settings_tab_layout = QVBoxLayout(self.settings_tab)
+        self.tabs.addTab(self.settings_tab, "Settings")
+
+        theme_label = QLabel("Theme", self.settings_tab)
+        self.settings_tab_layout.addWidget(theme_label)
+
+        self.theme_combo = QComboBox(self.settings_tab)
+        self.theme_combo.addItems(["Dark", "Nord Dark", "High Contrast Dark"])
+        # Use current theme if available
+        try:
+            self.theme_combo.setCurrentText(self.current_theme)
+        except Exception:
+            pass
+        self.theme_combo.currentTextChanged.connect(self.on_theme_changed)
+        self.settings_tab_layout.addWidget(self.theme_combo)
+
+        self.settings_tab_layout.addStretch(1)
+
         self.setLayout(self.layout)
+
+    def on_theme_changed(self, theme_name: str):
+        """Handle theme change from the Settings tab."""
+        self.current_theme = theme_name
+        self.apply_theme(theme_name)
+        try:
+            self.save_setting("theme", theme_name)
+        except Exception as e:
+            logger.error(f"Failed to save theme setting: {e}")
         
     def toggle_system_monitoring(self, state):
         """Toggle system monitoring on/off and update interval from settings."""
@@ -1388,8 +1459,16 @@ class DesktopAssistant(QWidget):
             return default_value
 
     def save_setting(self, key, value):
-        """Save a single setting to settings.json."""
-        settings = self.load_setting(key, {})
+        """Save a single setting to settings.json (merge with existing)."""
+        try:
+            with open("settings.json", "r") as file:
+                settings = json.load(file)
+        except FileNotFoundError:
+            settings = {}
+        except Exception as e:
+            logger.error(f"Failed to load settings for save_setting; starting fresh. Error: {e}")
+            settings = {}
+
         settings[key] = value
         with open("settings.json", "w") as file:
             json.dump(settings, file, indent=4)
@@ -1448,9 +1527,11 @@ class DesktopAssistant(QWidget):
             self.audio_ducking_enabled = True
     
     def stop_audio_ducking(self):
+        """Stop audio ducking thread safely if running."""
         if self.audio_ducking_enabled:
             self.ducking_stop_event.set()
-            if self.ducking_thread.is_alive():
+            # Guard against None before checking is_alive
+            if self.ducking_thread is not None and self.ducking_thread.is_alive():
                 self.ducking_thread.join()
             self.audio_ducking_enabled = False
     
@@ -1461,7 +1542,6 @@ class DesktopAssistant(QWidget):
         # Otherwise, enable audio ducking.
         else:
             self.start_audio_ducking()
-            self.audio_ducking_enabled = True
 
     def start_essential_apps(self):
         essential_apps = ["discord", "signal", "opera gx browser", "lorexcloud"]
