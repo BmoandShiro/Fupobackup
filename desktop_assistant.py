@@ -1,4 +1,4 @@
-﻿import speech_recognition as sr
+import speech_recognition as sr
 import pyttsx3
 import threading
 import spacy
@@ -8,10 +8,21 @@ from fuzzywuzzy import process, fuzz
 import subprocess
 import winreg
 import win32com.client
-import asana
+try:
+    import asana
+    ASANA_AVAILABLE = True
+except ImportError:
+    asana = None  # Asana SDK not installed; features will be disabled gracefully
+    ASANA_AVAILABLE = False
 import pythoncom
 import keyboard
-from spotify_controller import SpotifyController  # Import SpotifyController here
+
+# Spotify integration is optional; if spotipy or spotify_controller is missing, we disable it gracefully.
+try:
+    from spotify_controller import SpotifyController  # Import SpotifyController here
+except Exception as e:
+    SpotifyController = None
+    logging.getLogger(__name__).warning(f"Spotify integration disabled (spotify_controller/spotipy not available): {e}")
 from audio_ducking import monitor_and_adjust_volume, smooth_adjust_volume
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
@@ -85,7 +96,13 @@ class DesktopAssistant(QWidget):
         self.load_settings()
         self.training_mode_enabled = self.load_setting("training_mode", False)
         asana_token = self.load_setting("asana_token", "")
-        self.client = asana.Client.access_token(asana_token) if asana_token else None
+        # Initialize Asana client only if the SDK is available and a token is provided
+        self.client = None
+        if ASANA_AVAILABLE and asana_token:
+            try:
+                self.client = asana.Client.access_token(asana_token)
+            except Exception as e:
+                logger.error(f"Failed to initialize Asana client: {e}")
 
         self.executables = DesktopAssistant.load_executables()
         self.desktop_shortcuts = self.find_shortcuts(os.path.join(os.environ['USERPROFILE'], 'Desktop'))
@@ -109,18 +126,24 @@ class DesktopAssistant(QWidget):
 
         self.mic = sr.Microphone(device_index=1)
         self.initialize_key_listener()
+
+        # Spotify setup (optional)
         spotify_client_id = self.load_setting("spotify_client_id", "")
         spotify_client_secret = self.load_setting("spotify_client_secret", "")
         spotify_redirect_uri = self.load_setting("spotify_redirect_uri", "http://localhost:8080")
-        self.spotify_controller = SpotifyController(spotify_client_id, spotify_client_secret, spotify_redirect_uri) if all([spotify_client_id, spotify_client_secret, spotify_redirect_uri]) else None
-        if self.spotify_controller:
-            try:
-                user = self.spotify_controller.sp.current_user()
-                logger.info(f"Authenticated as: {user['display_name']}")
-                current = self.spotify_controller.sp.current_playback()
-                logger.info(f"Current playback: {current}")
-            except Exception as e:
-                logger.error(f"Spotify authentication error: {e}")
+        if SpotifyController and all([spotify_client_id, spotify_client_secret, spotify_redirect_uri]):
+            self.spotify_controller = SpotifyController(spotify_client_id, spotify_client_secret, spotify_redirect_uri)
+            if self.spotify_controller:
+                try:
+                    user = self.spotify_controller.sp.current_user()
+                    logger.info(f"Authenticated as: {user['display_name']}")
+                    current = self.spotify_controller.sp.current_playback()
+                    logger.info(f"Current playback: {current}")
+                except Exception as e:
+                    logger.error(f"Spotify authentication error: {e}")
+        else:
+            self.spotify_controller = None
+
         self.create_settings_menu()
 
         self.firefox_service = FirefoxService(executable_path=self.load_setting("geckodriver_path", "path_to_geckodriver"))
@@ -345,10 +368,25 @@ class DesktopAssistant(QWidget):
             self.updateLabelSignal.emit("Operation cancelled by user.")
 
     def init_volume_control(self):
-        devices = AudioUtilities.GetSpeakers()
-        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-        self.volume = cast(interface, POINTER(IAudioEndpointVolume))
-        self.original_volume_level = self.volume.GetMasterVolumeLevelScalar()  # Correctly define the original volume level
+        """Initialize system volume control (optional, may fail on some setups)."""
+        try:
+            devices = AudioUtilities.GetSpeakers()
+            # Some pycaw versions expose Activate on the interface, others require device.interface
+            interface = getattr(devices, "Activate", None)
+            if interface is None:
+                # Fallback: try default device interface if available
+                interface = devices._ctl.QueryInterface(IAudioEndpointVolume._iid_)
+            else:
+                interface = interface(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+
+            self.volume = cast(interface, POINTER(IAudioEndpointVolume))
+            self.original_volume_level = self.volume.GetMasterVolumeLevelScalar()
+            logger.info("Volume control initialized successfully.")
+        except Exception as e:
+            logger.error(f"Failed to initialize volume control / pycaw: {e}")
+            # Graceful degradation: disable audio ducking features
+            self.volume = None
+            self.original_volume_level = 0.5
 
     def prompt_path_entry(self):
         path, ok = QInputDialog.getText(self, "Input", "Enter the executable path:")
@@ -466,6 +504,11 @@ class DesktopAssistant(QWidget):
         return ""
 
     def create_task(self, project_id, task_name):
+        if not self.client:
+            msg = "Asana integration is not configured or the Asana SDK is not installed."
+            logger.warning(msg)
+            return msg
+
         try:
             # Assuming 'client' is your authenticated Asana client
             result = self.client.tasks.create({
@@ -474,14 +517,10 @@ class DesktopAssistant(QWidget):
             })
             print(f"Task created: {result}")
             return f"Task '{task_name}' created successfully."
-        except asana.error.AsanaError as e:
-            logger.error(f"Error creating task: {e}")
-            print(f"Error creating task: {e}")
-            return f"Error: {e}"
         except Exception as e:
-            logger.error(f"General Error: {e}")
-            print(f"General Error: {e}")
-            return f"General Error: {e}"
+            logger.error(f"Error creating Asana task: {e}")
+            print(f"Error creating Asana task: {e}")
+            return f"Error creating Asana task: {e}"
         
     def start_program_with_confirmation(self, spoken_name):
         # Find the best match for the spoken name
@@ -1396,6 +1435,9 @@ class DesktopAssistant(QWidget):
 
 
     def start_audio_ducking(self):
+        if not self.volume:
+            logger.warning("Audio ducking requested but volume control is unavailable.")
+            return
         if not self.audio_ducking_enabled:
             self.ducking_stop_event.clear()
             reduce_volume_level = self.original_volume_level / 2  # Use the class attribute
