@@ -1,4 +1,4 @@
-﻿################################################################################
+################################################################################
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
@@ -6,3 +6,7 @@
 /.cache
 /bart_finetuned
 /distilbert_finetuned
+
+# Secrets and local config (client IDs, API keys, tokens)
+/settings.json
+/.spotify_cache
