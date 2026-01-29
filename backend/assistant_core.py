@@ -19,23 +19,28 @@ from backend import helpers
 
 logger = logging.getLogger(__name__)
 
-# Lazy-initialized singletons
+# Lazy-initialized singletons (settings are not cached; Spotify is until cleared)
 _spotify_controller = None
 _weather_api = None
 _executables = None
-_settings = None
+
+
+def clear_caches() -> None:
+    """Clear cached Spotify (and other) state so next request uses fresh settings."""
+    global _spotify_controller
+    _spotify_controller = None
 
 
 def _load_settings() -> dict:
-    global _settings
-    if _settings is not None:
-        return _settings
+    """Read settings from disk every time so saved changes in the Settings tab are seen."""
     try:
         with open("settings.json", "r", encoding="utf-8") as f:
-            _settings = json.load(f)
+            return json.load(f)
     except FileNotFoundError:
-        _settings = {}
-    return _settings
+        return {}
+    except Exception as e:
+        logger.warning("Failed to load settings: %s", e)
+        return {}
 
 
 def _get_setting(key: str, default: Any = None) -> Any:
@@ -46,11 +51,11 @@ def _get_spotify():
     global _spotify_controller
     if _spotify_controller is not None:
         return _spotify_controller
-    cid = _get_setting("spotify_client_id", "")
-    secret = _get_setting("spotify_client_secret", "")
-    redirect = _get_setting("spotify_redirect_uri", "http://localhost:8080")
+    cid = (_get_setting("spotify_client_id") or "").strip()
+    secret = (_get_setting("spotify_client_secret") or "").strip()
+    redirect = (_get_setting("spotify_redirect_uri") or "http://localhost:8080").strip() or "http://localhost:8080"
     if not cid or not secret:
-        logger.info("Spotify credentials not in settings; Spotify disabled for API.")
+        logger.info("Spotify credentials not in settings (cid=%s, secret=%s); Spotify disabled for API.", bool(cid), bool(secret))
         return None
     try:
         from spotify_controller import SpotifyController
@@ -58,6 +63,7 @@ def _get_spotify():
         if _spotify_controller and getattr(_spotify_controller, "sp", None):
             logger.info("Spotify controller initialized for API.")
         else:
+            logger.warning("Spotify controller created but sp is None (auth may be needed).")
             _spotify_controller = None
     except Exception as e:
         logger.warning("Could not init Spotify for API: %s", e)

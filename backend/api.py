@@ -24,7 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from backend import helpers
-from backend.assistant_core import run_command as run_assistant_command
+from backend.assistant_core import clear_caches as assistant_clear_caches, run_command as run_assistant_command
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -182,6 +182,7 @@ async def put_settings(req: Dict[str, Any] = Body(...)) -> Dict[str, Any]:
     except Exception as e:
         logger.exception("Failed to write settings: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+    assistant_clear_caches()
     return current
 
 
