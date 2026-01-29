@@ -139,14 +139,18 @@ def _simple_intent(command: str) -> str:
         return "like_song"
     if any(w in c for w in ["unlike", "remove", "unfavorite"]) and "song" in c:
         return "unlike_song"
+    if "unmute" in c:
+        return "unmute"
     if "mute" in c:
         return "mute"
-    if "add" in c and "queue" in c:
-        return "add_to_queue"
-    if "volume up" in c or (c.strip() in ["volume up", "vol up"]):
+    if "spotify volume up" in c or "volume up" in c or (c.strip() in ["volume up", "vol up"]):
         return "volume_up"
-    if "volume down" in c or (c.strip() in ["volume down", "vol down"]):
+    if "spotify volume down" in c or "volume down" in c or (c.strip() in ["volume down", "vol down"]):
         return "volume_down"
+    if re.search(r"spotify\s+volume\s+\d+", c):
+        return "set_volume"
+    if re.search(r"set\s+spotify\s+volume\s+\d+", c):
+        return "set_volume"
     if any(w in c for w in ["set", "adjust"]) and "volume" in c:
         return "set_volume"
     if "increase" in c and "volume" in c:
@@ -284,6 +288,11 @@ def run_command(command: str) -> Tuple[str, str]:
             result = sp.mute()
             return (result, result) if isinstance(result, str) else ("Spotify muted.", "Spotify muted.")
         return _spotify_unconfigured()
+    if intent == "unmute":
+        if sp and getattr(sp, "sp", None):
+            result = sp.unmute()
+            return (result, result) if isinstance(result, str) else ("Spotify unmuted.", "Spotify unmuted.")
+        return _spotify_unconfigured()
     if intent == "add_to_queue":
         if sp and getattr(sp, "sp", None):
             m_this = re.search(r"add\s+(?:this|the)\s*(?:song\s+)?to\s+queue", command, re.IGNORECASE)
@@ -315,26 +324,31 @@ def run_command(command: str) -> Tuple[str, str]:
             return (result, result) if isinstance(result, str) else ("Volume down.", "Volume down.")
         return _spotify_unconfigured()
     if intent == "set_volume":
-        m = re.search(r"set\s+spotify\s+volume\s+to\s+(\d+)%?", command, re.IGNORECASE)
+        # "set spotify volume 50%", "set spotify volume 50 percent", "spotify volume 50", "set spotify volume to 50"
+        m = (
+            re.search(r"set\s+spotify\s+volume\s+(\d+)\s*%?\s*(?:percent)?", command, re.IGNORECASE)
+            or re.search(r"spotify\s+volume\s+(\d+)\s*%?\s*(?:percent)?", command, re.IGNORECASE)
+            or re.search(r"set\s+spotify\s+volume\s+to\s+(\d+)\s*%?\s*(?:percent)?", command, re.IGNORECASE)
+        )
         if m and sp and getattr(sp, "sp", None):
             vol = min(100, max(0, int(m.group(1))))
             result = sp.set_volume(vol)
             return (result, result) if isinstance(result, str) else (f"Volume set to {vol}%.", f"Volume set to {vol}%.")
-        return _spotify_unconfigured() if not sp else "Say 'set Spotify volume to [0-100]%'.", "Volume not specified."
+        return _spotify_unconfigured() if not sp else "Say 'set Spotify volume 50%' or 'Spotify volume [0-100]%'.", "Volume not specified."
     if intent == "increase_volume":
         m = re.search(r"increase\s+spotify\s+volume(?:\s+by\s+(\d+)%?)?", command, re.IGNORECASE)
         if m and sp and getattr(sp, "sp", None):
             amount = int(m.group(1)) if m.group(1) else 10
             result = sp.increase_volume(amount)
             return (result, result) if isinstance(result, str) else (f"Increased volume by {amount}%.", f"Increased volume.")
-        return _spotify_unconfigured() if not sp else "Say 'increase Spotify volume' or 'increase Spotify volume by [N]%'.", "Not specified."
+        return _spotify_unconfigured() if not sp else "Say 'Spotify volume up' or 'increase Spotify volume by [N]%'.", "Not specified."
     if intent == "decrease_volume":
         m = re.search(r"decrease\s+spotify\s+volume(?:\s+by\s+(\d+)%?)?", command, re.IGNORECASE)
         if m and sp and getattr(sp, "sp", None):
             amount = int(m.group(1)) if m.group(1) else 10
             result = sp.decrease_volume(amount)
             return (result, result) if isinstance(result, str) else (f"Decreased volume by {amount}%.", f"Decreased volume.")
-        return _spotify_unconfigured() if not sp else "Say 'decrease Spotify volume' or 'decrease Spotify volume by [N]%'.", "Not specified."
+        return _spotify_unconfigured() if not sp else "Say 'Spotify volume down' or 'decrease Spotify volume by [N]%'.", "Not specified."
     if intent == "create_playlist":
         m = re.search(r"create\s+(?:a\s+)?playlist\s+called\s+(.+)", command, re.IGNORECASE)
         if m and sp and getattr(sp, "sp", None):

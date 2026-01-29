@@ -702,6 +702,16 @@ class DesktopAssistant(QWidget):
             pre_filtered_intent = "add_to_playlist"
         elif "delete" in command_lower and "playlist" in command_lower:
             pre_filtered_intent = "delete_playlist"
+        elif "unmute" in command_lower:
+            pre_filtered_intent = "unmute"
+        elif "mute" in command_lower:
+            pre_filtered_intent = "mute"
+        elif "spotify volume up" in command_lower or "volume up" in command_lower:
+            pre_filtered_intent = "increase_volume"
+        elif "spotify volume down" in command_lower or "volume down" in command_lower:
+            pre_filtered_intent = "decrease_volume"
+        elif re.search(r"spotify\s+volume\s+\d+", command_lower) or re.search(r"set\s+spotify\s+volume\s+\d+", command_lower):
+            pre_filtered_intent = "set_volume"
         elif any(word in command_lower for word in ["set", "adjust"]) and "volume" in command_lower:
             pre_filtered_intent = "set_volume"
         elif "increase" in command_lower and "volume" in command_lower:
@@ -1085,35 +1095,49 @@ class DesktopAssistant(QWidget):
                     return delete_result, delete_result
             return "Playlist name not specified. Say 'delete playlist [name]'.", "Playlist name not specified."
 
+        elif intent == "mute":
+            if self.spotify_controller:
+                mute_result = self.spotify_controller.mute()
+                return mute_result, mute_result
+            return "Spotify not configured.", "Spotify not configured."
+
+        elif intent == "unmute":
+            if self.spotify_controller:
+                unmute_result = self.spotify_controller.unmute()
+                return unmute_result, unmute_result
+            return "Spotify not configured.", "Spotify not configured."
+
         elif intent == "set_volume":
-            match = re.search(r"set\s+spotify\s+volume\s+to\s+(\d+)%", command, re.IGNORECASE)
+            match = (
+                re.search(r"set\s+spotify\s+volume\s+(\d+)\s*%?\s*(?:percent)?", command, re.IGNORECASE)
+                or re.search(r"spotify\s+volume\s+(\d+)\s*%?\s*(?:percent)?", command, re.IGNORECASE)
+                or re.search(r"set\s+spotify\s+volume\s+to\s+(\d+)\s*%?\s*(?:percent)?", command, re.IGNORECASE)
+            )
             if match:
-                volume = int(match.group(1))
+                volume = min(100, max(0, int(match.group(1))))
                 if self.spotify_controller:
                     volume_result = self.spotify_controller.set_volume(volume)
                     logger.info(f"Set volume result: {volume_result}")
                     return volume_result, volume_result
-            return "Volume not specified. Say 'set Spotify volume to [number]%' (0-100).", "Volume not specified."
+            return "Volume not specified. Say 'Spotify volume [number]%' (0-100).", "Volume not specified."
 
         elif intent == "increase_volume":
             match = re.search(r"increase\s+spotify\s+volume(?:\s+by\s+(\d+)%?)?", command, re.IGNORECASE)
-            if match:
-                amount = int(match.group(1)) if match.group(1) else 10  # Default to 10% if no amount specified
-                if self.spotify_controller:
-                    volume_result = self.spotify_controller.increase_volume(amount)
-                    logger.info(f"Increase volume result: {volume_result}")
-                    return volume_result, volume_result
-            return "Say 'increase Spotify volume' or 'increase Spotify volume by [number]%' (default 10%).", "Say 'increase Spotify volume'."
+            amount = int(match.group(1)) if match and match.group(1) else 10
+            if self.spotify_controller:
+                volume_result = self.spotify_controller.increase_volume(amount)
+                logger.info(f"Increase volume result: {volume_result}")
+                return volume_result, volume_result
+            return "Say 'Spotify volume up' or 'increase Spotify volume by [number]%'.", "Say 'Spotify volume up'."
 
         elif intent == "decrease_volume":
             match = re.search(r"decrease\s+spotify\s+volume(?:\s+by\s+(\d+)%?)?", command, re.IGNORECASE)
-            if match:
-                amount = int(match.group(1)) if match.group(1) else 10  # Default to 10% if no amount specified
-                if self.spotify_controller:
-                    volume_result = self.spotify_controller.decrease_volume(amount)
-                    logger.info(f"Decrease volume result: {volume_result}")
-                    return volume_result, volume_result
-            return "Say 'decrease Spotify volume' or 'decrease Spotify volume by [number]%' (default 10%).", "Say 'decrease Spotify volume'."
+            amount = int(match.group(1)) if match and match.group(1) else 10
+            if self.spotify_controller:
+                volume_result = self.spotify_controller.decrease_volume(amount)
+                logger.info(f"Decrease volume result: {volume_result}")
+                return volume_result, volume_result
+            return "Say 'Spotify volume down' or 'decrease Spotify volume by [number]%'.", "Say 'Spotify volume down'."
 
         elif intent == "get_recommendations":
             match = re.search(r"(?:recommend|find)\s+(songs|artists)\s+like\s+(.+)|(?:recommend|find)\s+(\w+)\s+music", command, re.IGNORECASE)

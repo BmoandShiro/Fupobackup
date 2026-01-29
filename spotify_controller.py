@@ -28,6 +28,7 @@ def handle_spotify_exceptions(func):
 class SpotifyController:
     def __init__(self, client_id, client_secret, redirect_uri):
         self.redirect_uri = redirect_uri if redirect_uri else "http://localhost"  # Default to original redirect URI
+        self._volume_before_mute = None  # Restored by unmute()
         try:
             self.sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id,
                                                                 client_secret=client_secret,
@@ -276,11 +277,25 @@ class SpotifyController:
 
     @handle_spotify_exceptions
     def mute(self):
-        """Set Spotify volume to 0 (mute)."""
+        """Set Spotify volume to 0 (mute). Stores current volume for unmute."""
         if not self.sp:
             return "Spotify not initialized. Check authentication."
+        current = self.sp.current_playback()
+        if current and current.get("device") and "volume_percent" in current["device"]:
+            self._volume_before_mute = current["device"]["volume_percent"]
         self.sp.volume(0)
         return "Spotify muted."
+
+    @handle_spotify_exceptions
+    def unmute(self):
+        """Restore Spotify volume (to value before mute, or 70% if unknown)."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        vol = self._volume_before_mute if self._volume_before_mute is not None else 70
+        vol = min(100, max(0, vol))
+        self.sp.volume(vol)
+        self._volume_before_mute = None
+        return f"Spotify unmuted (volume {vol}%)."
 
     @handle_spotify_exceptions
     def play_similar(self):

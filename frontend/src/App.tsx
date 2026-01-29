@@ -766,10 +766,11 @@ const CommandsTab: React.FC = () => (
         <CommandRow phrase="Unlike song / Remove song / Unfavorite song" desc="Remove current track from Liked Songs." />
         <CommandRow phrase="Toggle shuffle / Switch shuffle" desc="Turn shuffle on/off." />
         <CommandRow phrase="Toggle repeat / Switch repeat" desc="Cycle repeat off → context → track." />
-        <CommandRow phrase="Set Spotify volume to [0–100]%" desc="Set playback volume." />
-        <CommandRow phrase="Increase / Decrease Spotify volume … by [N]%" desc="Raise or lower volume (default 10%)." />
-        <CommandRow phrase="Volume up / Volume down" desc="Short aliases for +10% / -10%." />
-        <CommandRow phrase="Mute / Mute Spotify" desc="Set Spotify volume to 0." />
+        <CommandRow phrase="Set Spotify volume [0–100]%" desc="Set playback volume (e.g. set Spotify volume 50%)." />
+        <CommandRow phrase="Spotify volume up" desc="Increase volume by 10%." />
+        <CommandRow phrase="Spotify volume down" desc="Decrease volume by 10%." />
+        <CommandRow phrase="Mute Spotify" desc="Set Spotify volume to 0 (stores level for unmute)." />
+        <CommandRow phrase="Unmute Spotify" desc="Restore volume to level before mute (or 70%)." />
         <CommandRow phrase="Create a playlist called [name]" desc="Create a new playlist." />
         <CommandRow phrase="Add this song to my [name] playlist" desc="Add current track to a playlist." />
         <CommandRow phrase="Delete playlist [name]" desc="Unfollow/delete a playlist." />
