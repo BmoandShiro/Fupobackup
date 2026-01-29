@@ -443,7 +443,8 @@ def run_command(command: str) -> Tuple[str, str]:
             command = re.sub(rf"\b{re.escape(word)}\b", "", command, flags=re.IGNORECASE)
         location = command.strip() or "auto"
         try:
-            display, spoken = api.get_weather(location, spoken_request=command, detailed=False)
+            result = api.get_weather(location, spoken_request=command, detailed=False)
+            display, spoken = result[0], result[1]
             return display, spoken
         except Exception as e:
             msg = f"Weather error: {e}"

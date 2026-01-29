@@ -402,3 +402,115 @@ body {
   line-height: 1.5;
   margin: 0;
 }
+
+/* Weather tab */
+.weather-tip {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  max-width: 520px;
+}
+.weather-resolved {
+  margin: 8px 0 4px;
+  font-size: 0.85rem;
+}
+.weather-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.weather-row .settings-input {
+  flex: 1;
+  min-width: 180px;
+}
+.weather-display {
+  margin: 12px 0 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #0f0f12;
+  border: 1px solid #232323;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  color: #d1d5db;
+  overflow-x: auto;
+}
+
+/* System tab – live charts */
+.system-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.system-chart-block {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(17, 17, 34, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.system-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.system-chart-header .system-label {
+  font-weight: 600;
+  color: #d1d5db;
+}
+.system-chart-header .system-value {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+.system-chart-svg-wrap {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+}
+.system-chart-svg-wrap svg {
+  display: block;
+  overflow: visible;
+}
+.system-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.system-label {
+  min-width: 48px;
+  font-weight: 500;
+  color: #d1d5db;
+}
+.system-value {
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+/* Chat tab (message list) */
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.chat-msg .chat-role {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  opacity: 0.8;
+  display: block;
+  margin-bottom: 4px;
+}
+.chat-msg .chat-text {
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+.chat-input-row .settings-input {
+  flex: 1;
+}

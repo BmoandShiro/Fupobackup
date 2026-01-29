@@ -408,31 +408,254 @@ const HelpTab: React.FC = () => {
   );
 };
 
-const WeatherTab: React.FC = () => (
-  <Card title="Weather" subtitle="Detailed conditions & map.">
-    <p className="muted">Weather dashboard UI will live here, backed by your existing WeatherAPI.</p>
-  </Card>
-);
+const WeatherTab: React.FC = () => {
+  const [location, setLocation] = useState("");
+  const [display, setDisplay] = useState<string | null>(null);
+  const [resolvedLocation, setResolvedLocation] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-const SystemTab: React.FC = () => (
-  <Card title="System" subtitle="CPU, RAM, and disk usage.">
-    <p className="muted">System monitoring charts will go here, calling a /api/system endpoint.</p>
-  </Card>
-);
+  const handleGetWeather = async () => {
+    setLoading(true);
+    setError(null);
+    setDisplay(null);
+    setResolvedLocation(null);
+    try {
+      const r = await api.getWeather(location.trim() || undefined);
+      setDisplay(r.display);
+      setResolvedLocation(r.location ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const ChatTab: React.FC = () => (
-  <Card title="Chat" subtitle="Talk to your configured AI (ChatGPT / Grok / Cursor CLI).">
-    <p className="muted">
-      Next step: add a chat log, input box, and wire it to /api/chat on the Python backend.
-    </p>
-  </Card>
-);
+  return (
+    <Card title="Weather" subtitle="Detailed conditions (Open-Meteo). City name or US ZIP — leave blank for current location.">
+      <p className="weather-tip muted">
+        Enter a city (e.g. Chicago, London) or a US ZIP code (e.g. 90210). Leave blank to use your current location.
+      </p>
+      <div className="weather-row">
+        <input
+          type="text"
+          className="settings-input"
+          placeholder="City or US ZIP (e.g. 60601) — blank = current location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleGetWeather()}
+        />
+        <button className="btn primary" onClick={handleGetWeather} disabled={loading}>
+          {loading ? "Loading…" : "Get weather"}
+        </button>
+      </div>
+      {error && <p className="muted" style={{ color: "#f87171" }}>{error}</p>}
+      {resolvedLocation && display != null && (
+        <p className="weather-resolved muted">Showing: {resolvedLocation}</p>
+      )}
+      {display != null && (
+        <pre className="weather-display">{display}</pre>
+      )}
+    </Card>
+  );
+};
 
-const ToolsTab: React.FC = () => (
-  <Card title="Tools" subtitle="Screenshots and utilities.">
-    <p className="muted">Screenshot and other tools will be triggered from here via /api/tools endpoints.</p>
-  </Card>
-);
+const MAX_POINTS = 60;
+const POLL_MS = 2000;
+
+const LiveLineChart: React.FC<{
+  data: number[];
+  color: string;
+  label: string;
+  currentValue: string;
+}> = ({ data, color, label, currentValue }) => {
+  const w = 400;
+  const h = 72;
+  if (data.length < 2) {
+    return (
+      <div className="system-chart-block">
+        <div className="system-chart-header">
+          <span className="system-label">{label}</span>
+          <span className="system-value">{currentValue}</span>
+        </div>
+        <div className="system-chart-svg-wrap" style={{ width: w, height: h }}>
+          <span className="muted">Collecting…</span>
+        </div>
+      </div>
+    );
+  }
+  const points = data
+    .map((v, i) => {
+      const x = (i / Math.max(1, data.length - 1)) * w;
+      const y = h - (Math.min(100, Math.max(0, v)) / 100) * h;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  return (
+    <div className="system-chart-block">
+      <div className="system-chart-header">
+        <span className="system-label">{label}</span>
+        <span className="system-value">{currentValue}</span>
+      </div>
+      <div className="system-chart-svg-wrap" style={{ width: w, height: h }}>
+        <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+          <polyline
+            fill="none"
+            stroke={color}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            points={points}
+          />
+        </svg>
+      </div>
+    </div>
+  );
+};
+
+const SystemTab: React.FC = () => {
+  const [history, setHistory] = useState<{
+    cpu: number[];
+    ram: number[];
+    disk: number[];
+    latest: { cpu_percent: number; ram_percent: number; ram_used_gb: number; ram_total_gb: number; disk_percent: number } | null;
+  }>({ cpu: [], ram: [], disk: [], latest: null });
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = () => {
+    api.getSystem()
+      .then((s) => {
+        setError(null);
+        setHistory((prev) => {
+          const cpu = [...prev.cpu, s.cpu_percent].slice(-MAX_POINTS);
+          const ram = [...prev.ram, s.ram_percent].slice(-MAX_POINTS);
+          const disk = [...prev.disk, s.disk_percent].slice(-MAX_POINTS);
+          return { cpu, ram, disk, latest: s };
+        });
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  };
+
+  useEffect(() => {
+    refresh();
+    const interval = setInterval(refresh, POLL_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (error && !history.latest) {
+    return (
+      <Card title="System" subtitle="CPU, RAM, and disk usage.">
+        <p className="muted" style={{ color: "#f87171" }}>{error}</p>
+      </Card>
+    );
+  }
+
+  const latest = history.latest;
+  return (
+    <Card title="System" subtitle="Live CPU, RAM, and disk usage. Updates every 2s.">
+      <div className="system-charts">
+        <LiveLineChart
+          data={history.cpu}
+          color="#a855f7"
+          label="CPU"
+          currentValue={latest ? `${latest.cpu_percent}%` : "—"}
+        />
+        <LiveLineChart
+          data={history.ram}
+          color="#6366f1"
+          label="RAM"
+          currentValue={latest ? `${latest.ram_percent}% (${latest.ram_used_gb} / ${latest.ram_total_gb} GB)` : "—"}
+        />
+        <LiveLineChart
+          data={history.disk}
+          color="#22c55e"
+          label="Disk"
+          currentValue={latest ? `${latest.disk_percent}%` : "—"}
+        />
+      </div>
+    </Card>
+  );
+};
+
+const ChatTab: React.FC = () => {
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const handleSend = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", text }]);
+    setLoading(true);
+    try {
+      const r = await api.chat(text);
+      setMessages((prev) => [...prev, { role: "assistant", text: r.display }]);
+    } catch (e) {
+      setMessages((prev) => [...prev, { role: "assistant", text: `Error: ${e instanceof Error ? e.message : String(e)}` }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card title="Chat" subtitle="Talk to your configured AI (ChatGPT / Grok / Cursor CLI). Backend /api/chat is currently a stub.">
+      <div className="chat-messages">
+        {messages.length === 0 && (
+          <p className="muted">Send a message to test the chat endpoint. Wire backend to your AI in Settings to get real replies.</p>
+        )}
+        {messages.map((m, i) => (
+          <div key={i} className={`chat-msg ${m.role}`}>
+            <span className="chat-role">{m.role === "user" ? "You" : "Assistant"}</span>
+            <span className="chat-text">{m.text}</span>
+          </div>
+        ))}
+      </div>
+      <div className="chat-input-row">
+        <input
+          type="text"
+          className="settings-input"
+          placeholder="Type a message…"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+        />
+        <button className="btn primary" onClick={handleSend} disabled={loading}>
+          {loading ? "…" : "Send"}
+        </button>
+      </div>
+    </Card>
+  );
+};
+
+const ToolsTab: React.FC = () => {
+  const [status, setStatus] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+
+  const handleScreenshot = async () => {
+    setLoading(true);
+    setStatus("");
+    try {
+      const r = await api.screenshot();
+      setStatus(r.message);
+    } catch (e) {
+      setStatus(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card title="Tools" subtitle="Screenshots and utilities.">
+      <div className="btn-column">
+        <button className="btn primary" onClick={handleScreenshot} disabled={loading}>
+          {loading ? "Capturing…" : "Take screenshot"}
+        </button>
+      </div>
+      {status && <p className="muted" style={{ marginTop: "8px" }}>{status}</p>}
+    </Card>
+  );
+};
 
 // --- Commands tab: reference for voice/text commands ---
 

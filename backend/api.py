@@ -287,11 +287,74 @@ async def get_ducking() -> Dict[str, Any]:
     return {"enabled": _ducking_enabled}
 
 
-# TODO: add more endpoints as you wire things up:
-#   - /api/weather?location=...
-#   - /api/system (CPU/RAM/disk stats)
-#   - /api/spotify (play/pause/like/etc.)
-#   - /api/asana/task
-#   - /api/tools/screenshot
-#   - /api/listen (mic -> process_command; requires headless command processor)
+# --- Weather ---
+
+@app.get("/api/weather")
+async def get_weather(location: str | None = None) -> Dict[str, Any]:
+    """Get weather for city name, US ZIP (5 or 5+4), or auto (IP). Returns display, spoken, and resolved location."""
+    from backend.assistant_core import _get_weather_api
+    api_obj = _get_weather_api()
+    if api_obj is None:
+        raise HTTPException(status_code=503, detail="Weather API not available")
+    city = (location or "").strip() or "auto"
+    try:
+        result = await asyncio.to_thread(api_obj.get_weather, city, "", True)
+        display, spoken = result[0], result[1]
+        resolved_location = result[2] if len(result) > 2 else None
+        return {"display": display, "spoken": spoken, "location": resolved_location}
+    except Exception as e:
+        logger.exception("Weather request failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- System (CPU/RAM/disk, headless with psutil) ---
+
+@app.get("/api/system")
+async def get_system() -> Dict[str, Any]:
+    """Return current CPU, RAM, and disk usage (no Qt)."""
+    try:
+        import psutil
+    except ImportError:
+        raise HTTPException(status_code=501, detail="psutil not installed")
+    cpu_percent = psutil.cpu_percent(interval=None)
+    ram = psutil.virtual_memory()
+    # Use home drive on Windows for disk, else /
+    root = os.path.expanduser("~")
+    if os.name == "nt" and len(root) >= 2 and root[1] == ":":
+        root = root[:2] + os.sep
+    try:
+        disk = psutil.disk_usage(root)
+        disk_percent = disk.percent
+    except Exception:
+        disk_percent = 0.0
+    return {
+        "cpu_percent": round(cpu_percent, 1),
+        "ram_percent": round(ram.percent, 1),
+        "ram_used_gb": round(ram.used / (1024 ** 3), 2),
+        "ram_total_gb": round(ram.total / (1024 ** 3), 2),
+        "disk_percent": round(disk_percent, 1),
+    }
+
+
+# --- Tools (screenshot) ---
+
+@app.post("/api/tools/screenshot")
+async def take_screenshot() -> Dict[str, Any]:
+    """Take a screenshot and save to the folder from settings (or default Pictures/Screenshots)."""
+    from backend.assistant_core import _get_setting
+    from datetime import datetime
+    try:
+        import pyautogui
+    except ImportError:
+        raise HTTPException(status_code=501, detail="pyautogui not installed")
+    save_dir = _get_setting("screenshot_dir", os.path.join(os.path.expanduser("~"), "Pictures", "Screenshots"))
+    os.makedirs(save_dir, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = os.path.join(save_dir, f"screenshot_{ts}.png")
+    try:
+        await asyncio.to_thread(pyautogui.screenshot().save, path)
+    except Exception as e:
+        logger.exception("Screenshot failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+    return {"path": path, "message": f"Screenshot saved to {path}"}
 

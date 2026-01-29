@@ -89,6 +89,26 @@ export interface DuckingResponse {
   message: string;
 }
 
+export interface WeatherResponse {
+  display: string;
+  spoken: string;
+  /** Resolved place name (e.g. "Chicago, Illinois, United States") when successful */
+  location?: string | null;
+}
+
+export interface SystemResponse {
+  cpu_percent: number;
+  ram_percent: number;
+  ram_used_gb: number;
+  ram_total_gb: number;
+  disk_percent: number;
+}
+
+export interface ScreenshotResponse {
+  path: string;
+  message: string;
+}
+
 /** Keys and types matching settings.json (strings, numbers, booleans, arrays). */
 export type Settings = Record<string, string | number | boolean | string[]>;
 
@@ -143,6 +163,19 @@ export const api = {
 
   getDucking(): Promise<{ enabled: boolean }> {
     return request<{ enabled: boolean }>("/api/ducking");
+  },
+
+  getWeather(location?: string): Promise<WeatherResponse> {
+    const q = location?.trim() ? `?location=${encodeURIComponent(location.trim())}` : "";
+    return request<WeatherResponse>(`/api/weather${q}`);
+  },
+
+  getSystem(): Promise<SystemResponse> {
+    return request<SystemResponse>("/api/system");
+  },
+
+  screenshot(): Promise<ScreenshotResponse> {
+    return request<ScreenshotResponse>("/api/tools/screenshot", { method: "POST" });
   },
 
   getSettings(): Promise<Settings> {

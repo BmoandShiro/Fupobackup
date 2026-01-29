@@ -808,12 +808,18 @@ class DesktopAssistant(QWidget):
 
             logger.info(f"Parsed weather location: {location}, detailed: {detailed_weather}, forecast: {forecast}, alerts: {alerts}")
             try:
-                display_msg, spoken_msg = self.weather_api.get_weather(location, spoken_request=command, detailed=detailed_weather)
+                result = self.weather_api.get_weather(location, spoken_request=command, detailed=detailed_weather)
+                display_msg, spoken_msg = result[0], result[1]
                 if forecast or alerts:
                     lat, lon, loc = self.weather_api.get_coordinates(location) if location != "auto" else self.weather_api.get_current_location()
+                    if location != "auto" and lat is None and self.weather_api.get_coordinates_from_zip:
+                        zip5 = "".join(c for c in location if c.isdigit())[:5]
+                        if len(zip5) == 5:
+                            lat, lon, loc = self.weather_api.get_coordinates_from_zip(zip5)
                     if lat and lon:
                         if forecast:
-                            full_display, _ = self.weather_api.get_weather(location)
+                            full_result = self.weather_api.get_weather(location)
+                            full_display = full_result[0] if full_result else ""
                             forecast_lines = full_display.split("\n**5-Day Forecast:**\n")[-1].strip().split("\n")
                             forecast_data = []
                             for line in forecast_lines:
