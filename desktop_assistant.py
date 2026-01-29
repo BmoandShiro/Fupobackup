@@ -454,21 +454,26 @@ class DesktopAssistant(QWidget):
     def init_volume_control(self):
         """Initialize system volume control (optional, may fail on some setups)."""
         try:
-            devices = AudioUtilities.GetSpeakers()
-            # Some pycaw versions expose Activate on the interface, others require device.interface
-            interface = getattr(devices, "Activate", None)
-            if interface is None:
-                # Fallback: try default device interface if available
-                interface = devices._ctl.QueryInterface(IAudioEndpointVolume._iid_)
+            device = AudioUtilities.GetSpeakers()
+            # Prefer EndpointVolume (modern pycaw); fallback to Activate (no _ctl)
+            volume = getattr(device, "EndpointVolume", None)
+            if volume is not None:
+                self.volume = cast(volume, POINTER(IAudioEndpointVolume))
             else:
-                interface = interface(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-
-            self.volume = cast(interface, POINTER(IAudioEndpointVolume))
-            self.original_volume_level = self.volume.GetMasterVolumeLevelScalar()
-            logger.info("Volume control initialized successfully.")
+                interface = getattr(device, "Activate", None)
+                if interface is not None:
+                    iface = interface(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                    self.volume = cast(iface, POINTER(IAudioEndpointVolume))
+                else:
+                    self.volume = None
+            if self.volume is not None:
+                self.original_volume_level = self.volume.GetMasterVolumeLevelScalar()
+                logger.info("Volume control initialized successfully.")
+            else:
+                self.volume = None
+                self.original_volume_level = 0.5
         except Exception as e:
             logger.error(f"Failed to initialize volume control / pycaw: {e}")
-            # Graceful degradation: disable audio ducking features
             self.volume = None
             self.original_volume_level = 0.5
 

@@ -161,8 +161,8 @@ export const api = {
     });
   },
 
-  getDucking(): Promise<{ enabled: boolean }> {
-    return request<{ enabled: boolean }>("/api/ducking");
+  getDucking(): Promise<{ enabled: boolean; available?: boolean; error?: string }> {
+    return request<{ enabled: boolean; available?: boolean; error?: string }>("/api/ducking");
   },
 
   getWeather(location?: string): Promise<WeatherResponse> {

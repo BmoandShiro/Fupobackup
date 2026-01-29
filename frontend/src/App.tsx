@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
-import { api, type Settings } from "./utils/api";
+import { api, type Settings, type MicItem } from "./utils/api";
 
 type TabId = "home" | "weather" | "system" | "chat" | "tools" | "commands" | "help" | "settings";
 
@@ -107,13 +107,21 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
   const [scanProgress, setScanProgress] = useState<number>(0);
   const [listening, setListening] = useState<boolean>(false);
   const [duckingEnabled, setDuckingEnabled] = useState<boolean>(false);
+  const [duckingAvailable, setDuckingAvailable] = useState<boolean | null>(null);
+  const [duckingError, setDuckingError] = useState<string | null>(null);
   const [pendingPrompt, setPendingPrompt] = useState<{ message: string; followUpPrefix: string } | null>(null);
   const [promptInput, setPromptInput] = useState("");
   const scanPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sync ducking state from backend on mount
+  // Sync ducking state and pycaw availability from backend on mount
   useEffect(() => {
-    api.getDucking().then((r) => setDuckingEnabled(r.enabled)).catch(() => {});
+    api.getDucking()
+      .then((r) => {
+        setDuckingEnabled(r.enabled);
+        setDuckingAvailable(r.available ?? true);
+        setDuckingError(r.error ?? null);
+      })
+      .catch(() => {});
     return () => {
       if (scanPollRef.current) clearInterval(scanPollRef.current);
     };
@@ -308,6 +316,7 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
         <button
           className="btn"
           onClick={handleToggleDucking}
+          disabled={duckingAvailable === false}
           style={
             duckingEnabled
               ? { borderColor: "#a855f7", background: "#161320" }
@@ -317,6 +326,11 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
           {duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
         </button>
       </div>
+      {duckingAvailable === false && duckingError && (
+        <p className="muted ducking-error" style={{ marginTop: "8px", fontSize: "0.85rem", color: "#f87171" }}>
+          pycaw unavailable: {duckingError}
+        </p>
+      )}
 
       <div className="status-card">
         <div className="status-label">Status</div>
@@ -357,6 +371,11 @@ const HELP_SECTIONS = [
     id: "audio-ducking",
     title: "Audio ducking",
     body: "Audio ducking lowers your system (or Spotify) volume when you speak into the microphone, so your voice is easier to hear over music or other audio. Enable it from the Home tab with “Enable Audio Ducking.” It uses the pycaw library on Windows to control the default output device. If you see “Audio ducking unavailable (pycaw not set up),” the audio device or driver may not support the control the app uses (e.g. on some Windows setups). You can still use the app without ducking.",
+  },
+  {
+    id: "pycaw-setup",
+    title: "Setting up pycaw (audio ducking)",
+    body: "Audio ducking needs pycaw and comtypes on Windows. From your project folder in a terminal: (1) Install: pip install pycaw comtypes. Or install everything: pip install -r requirements.txt. (2) Use a 64-bit Python if your Windows is 64-bit. (3) If it still fails, run the terminal (or backend) as Administrator once so COM can register. (4) Restart the backend after installing. Audio ducking only works on Windows with a default playback device that supports volume control.",
   },
   {
     id: "settings",
@@ -783,6 +802,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
   setLayoutMode,
 }) => {
   const [settings, setSettings] = useState<Settings>({});
+  const [mics, setMics] = useState<MicItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<string>("");
 
@@ -792,6 +812,10 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
       .then((s) => setSettings(s))
       .catch(() => setSettings({}))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    api.getMics().then((r) => setMics(r.mics || [])).catch(() => setMics([]));
   }, []);
 
   const update = (key: string, value: string | number | boolean) => {
@@ -823,6 +847,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
         system_refresh_interval: num(settings.system_refresh_interval, 5000),
         monitor_weather_statements: bool(settings.monitor_weather_statements),
         weather_check_interval: num(settings.weather_check_interval, 60),
+        microphone_index: num(settings.microphone_index, 0),
       };
       if (Array.isArray(settings.weather_monitor_locations)) {
         toSave.weather_monitor_locations = settings.weather_monitor_locations;
@@ -848,6 +873,28 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
   return (
     <Card title="Settings" subtitle="Spotify, AI, paths, and layout. Changes apply after Save.">
       <div className="settings-section">
+        <h3 className="settings-heading">Microphone</h3>
+        <div className="settings-row">
+          <label className="settings-label">Default microphone</label>
+          <select
+            className="settings-input"
+            value={num(settings.microphone_index, 0)}
+            onChange={(e) => update("microphone_index", parseInt(e.target.value, 10) || 0)}
+            title="Microphone used for Listen and voice commands"
+          >
+            {mics.length === 0 ? (
+              <option value={0}>Loading…</option>
+            ) : (
+              mics.map((m) => (
+                <option key={m.index} value={m.index}>
+                  {m.name || `Device ${m.index}`}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+
+        <h3 className="settings-heading">Layout</h3>
         <div className="settings-row">
           <span className="settings-label">Tab layout</span>
           <div className="settings-options">

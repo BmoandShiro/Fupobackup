@@ -61,29 +61,40 @@ def monitor_and_adjust_volume(volume, threshold_db, volume_level_db, stop_event)
 
         
 
+def _get_endpoint_volume():
+    """Get IAudioEndpointVolume for default speakers. Prefer EndpointVolume (modern pycaw)."""
+    device = AudioUtilities.GetSpeakers()
+    volume = getattr(device, "EndpointVolume", None)
+    if volume is not None:
+        return cast(volume, POINTER(IAudioEndpointVolume))
+    if getattr(device, "Activate", None) is not None:
+        iface = device.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+        return cast(iface, POINTER(IAudioEndpointVolume))
+    return None
+
+
 def print_audio_device_info():
-    devices = AudioUtilities.GetSpeakers()
-    interface = devices.Activate(
-        IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    volume = cast(interface, POINTER(IAudioEndpointVolume))
-
-    device_name = devices.GetDeviceFriendlyName()
-    device_id = devices.GetId()
-
+    device = AudioUtilities.GetSpeakers()
+    volume = _get_endpoint_volume()
+    if volume is None:
+        print("Could not get volume interface.")
+        return
+    device_name = getattr(device, "FriendlyName", None) or getattr(device, "GetDeviceFriendlyName", lambda: "Unknown")()
+    device_id = getattr(device, "GetId", lambda: "")()
     print(f"Default Audio Playback Device: {device_name}")
     print(f"Device ID: {device_id}")
 
+
 if __name__ == "__main__":
     threshold_db = 30  # Adjust this threshold to your preference
-    #volume_level_db = 0.5  # Target volume level (0.0 to 1.0, 0.5 for half volume)
 
-    devices = AudioUtilities.GetSpeakers()
-    interface = devices.Activate(
-        IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    volume = cast(interface, POINTER(IAudioEndpointVolume))
+    volume = _get_endpoint_volume()
+    if volume is None:
+        print("Could not get volume interface (pycaw). Check EndpointVolume / Activate.")
+        raise SystemExit(1)
 
     stop_event = threading.Event()
-    monitor_thread = threading.Thread(target=monitor_and_adjust_volume, args=(volume, threshold_db, stop_event))
+    monitor_thread = threading.Thread(target=monitor_and_adjust_volume, args=(volume, threshold_db, 0.5, stop_event))
 
     monitor_thread.start()
 

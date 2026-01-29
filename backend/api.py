@@ -51,24 +51,32 @@ _ducking_enabled = False
 _ducking_thread = None
 _ducking_stop = threading.Event()
 _volume_interface = None
+_volume_init_error: str | None = None  # last error when pycaw init failed (so UI can show it)
 
 def _init_volume():
-    global _volume_interface
+    global _volume_interface, _volume_init_error
     if _volume_interface is not None:
         return _volume_interface
+    _volume_init_error = None
     try:
         from ctypes import cast, POINTER
-        from comtypes import CLSCTX_ALL
         from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-        devices = AudioUtilities.GetSpeakers()
-        interface = getattr(devices, "Activate", None)
-        if interface is None:
-            interface = devices._ctl.QueryInterface(IAudioEndpointVolume._iid_)
-        else:
-            interface = interface(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-        _volume_interface = cast(interface, POINTER(IAudioEndpointVolume))
-        return _volume_interface
+        device = AudioUtilities.GetSpeakers()
+        # Prefer EndpointVolume (modern pycaw); fallback to Activate (no _ctl)
+        volume = getattr(device, "EndpointVolume", None)
+        if volume is not None:
+            _volume_interface = cast(volume, POINTER(IAudioEndpointVolume))
+            return _volume_interface
+        from comtypes import CLSCTX_ALL
+        interface = getattr(device, "Activate", None)
+        if interface is not None:
+            iface = interface(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            _volume_interface = cast(iface, POINTER(IAudioEndpointVolume))
+            return _volume_interface
+        _volume_init_error = "pycaw device has no EndpointVolume or Activate (update pycaw?)"
+        return None
     except Exception as e:
+        _volume_init_error = str(e)
         logger.warning("Volume control (pycaw) unavailable: %s", e)
         return None
 
@@ -252,7 +260,12 @@ async def set_ducking(req: DuckingRequest) -> Dict[str, Any]:
     global _ducking_enabled, _ducking_thread, _ducking_stop
     vol = _init_volume()
     if vol is None:
-        raise HTTPException(status_code=501, detail="Audio ducking unavailable (pycaw not set up)")
+        msg = "Audio ducking unavailable (pycaw not set up)."
+        if _volume_init_error:
+            msg += f" Reason: {_volume_init_error}"
+        else:
+            msg += " Install with: pip install pycaw comtypes. See Help tab for full setup."
+        raise HTTPException(status_code=501, detail=msg)
     if req.enabled:
         if _ducking_enabled:
             return {"enabled": True, "message": "Audio ducking already enabled."}
@@ -283,8 +296,16 @@ async def set_ducking(req: DuckingRequest) -> Dict[str, Any]:
 
 @app.get("/api/ducking")
 async def get_ducking() -> Dict[str, Any]:
-    """Return whether audio ducking is currently enabled."""
-    return {"enabled": _ducking_enabled}
+    """Return whether audio ducking is enabled and if pycaw is available (with error if not)."""
+    vol = _init_volume()
+    out: Dict[str, Any] = {"enabled": _ducking_enabled}
+    if vol is None:
+        out["available"] = False
+        if _volume_init_error:
+            out["error"] = _volume_init_error
+    else:
+        out["available"] = True
+    return out
 
 
 # --- Weather ---
