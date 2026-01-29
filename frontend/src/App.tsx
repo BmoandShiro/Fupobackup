@@ -513,7 +513,10 @@ const LiveLineChart: React.FC<{
   );
 };
 
+type SystemViewMode = "charts" | "bars";
+
 const SystemTab: React.FC = () => {
+  const [viewMode, setViewMode] = useState<SystemViewMode>("charts");
   const [history, setHistory] = useState<{
     cpu: number[];
     ram: number[];
@@ -553,26 +556,75 @@ const SystemTab: React.FC = () => {
   const latest = history.latest;
   return (
     <Card title="System" subtitle="Live CPU, RAM, and disk usage. Updates every 2s.">
-      <div className="system-charts">
-        <LiveLineChart
-          data={history.cpu}
-          color="#a855f7"
-          label="CPU"
-          currentValue={latest ? `${latest.cpu_percent}%` : "—"}
-        />
-        <LiveLineChart
-          data={history.ram}
-          color="#6366f1"
-          label="RAM"
-          currentValue={latest ? `${latest.ram_percent}% (${latest.ram_used_gb} / ${latest.ram_total_gb} GB)` : "—"}
-        />
-        <LiveLineChart
-          data={history.disk}
-          color="#22c55e"
-          label="Disk"
-          currentValue={latest ? `${latest.disk_percent}%` : "—"}
-        />
+      <div className="system-view-toggle">
+        <span className="system-toggle-label">View:</span>
+        <div className="system-toggle-buttons">
+          <button
+            type="button"
+            className={`btn ${viewMode === "charts" ? "primary" : ""}`}
+            onClick={() => setViewMode("charts")}
+          >
+            Charts
+          </button>
+          <button
+            type="button"
+            className={`btn ${viewMode === "bars" ? "primary" : ""}`}
+            onClick={() => setViewMode("bars")}
+          >
+            Bars
+          </button>
+        </div>
       </div>
+      {viewMode === "charts" && (
+        <div className="system-charts">
+          <LiveLineChart
+            data={history.cpu}
+            color="#a855f7"
+            label="CPU"
+            currentValue={latest ? `${latest.cpu_percent}%` : "—"}
+          />
+          <LiveLineChart
+            data={history.ram}
+            color="#6366f1"
+            label="RAM"
+            currentValue={latest ? `${latest.ram_percent}% (${latest.ram_used_gb} / ${latest.ram_total_gb} GB)` : "—"}
+          />
+          <LiveLineChart
+            data={history.disk}
+            color="#22c55e"
+            label="Disk"
+            currentValue={latest ? `${latest.disk_percent}%` : "—"}
+          />
+        </div>
+      )}
+      {viewMode === "bars" && latest && (
+        <div className="system-stats">
+          <div className="system-row">
+            <span className="system-label">CPU</span>
+            <div className="system-bar-wrap">
+              <div className="system-bar" style={{ width: `${Math.min(100, latest.cpu_percent)}%` }} />
+            </div>
+            <span className="system-value">{latest.cpu_percent}%</span>
+          </div>
+          <div className="system-row">
+            <span className="system-label">RAM</span>
+            <div className="system-bar-wrap">
+              <div className="system-bar" style={{ width: `${latest.ram_percent}%` }} />
+            </div>
+            <span className="system-value">{latest.ram_percent}% ({latest.ram_used_gb} / {latest.ram_total_gb} GB)</span>
+          </div>
+          <div className="system-row">
+            <span className="system-label">Disk</span>
+            <div className="system-bar-wrap">
+              <div className="system-bar" style={{ width: `${latest.disk_percent}%` }} />
+            </div>
+            <span className="system-value">{latest.disk_percent}%</span>
+          </div>
+        </div>
+      )}
+      {viewMode === "bars" && !latest && (
+        <p className="muted">Collecting…</p>
+      )}
     </Card>
   );
 };

@@ -436,6 +436,51 @@ body {
   overflow-x: auto;
 }
 
+/* System tab – view toggle */
+.system-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.system-toggle-label {
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+.system-toggle-buttons {
+  display: flex;
+  gap: 6px;
+}
+.system-toggle-buttons .btn {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+/* System tab – bars view (live, no refresh button) */
+.system-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.system-stats .system-row {
+  align-items: center;
+}
+.system-bar-wrap {
+  flex: 1;
+  min-width: 120px;
+  height: 10px;
+  border-radius: 999px;
+  background: #111022;
+  overflow: hidden;
+}
+.system-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #a855f7, #6366f1);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
 /* System tab – live charts */
 .system-charts {
   display: flex;
