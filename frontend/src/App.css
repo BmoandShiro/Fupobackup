@@ -294,3 +294,111 @@ body {
 .settings-row-check input[type="checkbox"] {
   accent-color: #a855f7;
 }
+
+/* Commands tab */
+.commands-section {
+  margin-top: 8px;
+}
+.commands-section-title {
+  font-size: 1.15rem;
+  color: #a855f7;
+  margin: 0 0 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #333;
+}
+.commands-subtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #d1d5db;
+  margin: 16px 0 8px;
+}
+.command-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.command-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(30, 27, 75, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.command-phrase {
+  font-weight: 500;
+  color: #e5e7eb;
+  font-size: 0.9rem;
+}
+.command-desc {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+.command-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.command-badge.badge-soon {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+.command-badge.badge-rec {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+/* Home: follow-up prompt for create playlist */
+.prompt-follow-up {
+  margin-top: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #333;
+}
+.prompt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.prompt-row .settings-input {
+  flex: 1;
+  max-width: 280px;
+}
+
+/* Help tab */
+.help-search-row {
+  margin-bottom: 16px;
+}
+.help-search {
+  max-width: 100%;
+  width: 320px;
+}
+.help-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.help-section {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+.help-section:last-child {
+  border-bottom: none;
+}
+.help-section-title {
+  font-size: 1rem;
+  color: #a855f7;
+  margin: 0 0 8px;
+}
+.help-section-body {
+  font-size: 0.9rem;
+  color: #d1d5db;
+  line-height: 1.5;
+  margin: 0;
+}

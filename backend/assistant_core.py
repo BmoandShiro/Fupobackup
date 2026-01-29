@@ -107,6 +107,14 @@ def _simple_intent(command: str) -> str:
         return "weather"
     if any(w in c for w in ["start", "launch", "open"]) and "play" not in c:
         return "start_program"
+    if "play" in c and "my" in c and "liked" in c and "song" not in c:
+        return "play_liked_songs"
+    if "play" in c and "discover weekly" in c:
+        return "play_discover_weekly"
+    if "play" in c and "release radar" in c:
+        return "play_release_radar"
+    if "play" in c and ("something similar" in c or "more like this" in c or "similar" in c):
+        return "play_similar"
     if "play" in c and "song" in c and "liked" in c:
         return "play_liked_song"
     if "play" in c and "song" in c:
@@ -117,17 +125,45 @@ def _simple_intent(command: str) -> str:
         return "play_artist"
     if "play" in c and "album" in c:
         return "play_album"
+    if "create" in c and "playlist" in c:
+        return "create_playlist"
     if "play" in c and "playlist" in c:
         return "play_playlist"
     if "play" in c and "daylist" in c:
         return "play_daylist"
+    if "play" in c and "music" in c and "for" in c and "then stop" in c:
+        return "timed_playback"
+    if "play" in c and "music" in c:
+        return "resume_playback"
     if any(w in c for w in ["like", "favorite"]) and "song" in c:
         return "like_song"
     if any(w in c for w in ["unlike", "remove", "unfavorite"]) and "song" in c:
         return "unlike_song"
+    if "mute" in c:
+        return "mute"
+    if "add" in c and "queue" in c:
+        return "add_to_queue"
+    if "volume up" in c or (c.strip() in ["volume up", "vol up"]):
+        return "volume_up"
+    if "volume down" in c or (c.strip() in ["volume down", "vol down"]):
+        return "volume_down"
+    if any(w in c for w in ["set", "adjust"]) and "volume" in c:
+        return "set_volume"
+    if "increase" in c and "volume" in c:
+        return "increase_volume"
+    if "decrease" in c and "volume" in c:
+        return "decrease_volume"
+    if "add" in c and "playlist" in c:
+        return "add_to_playlist"
+    if "delete" in c and "playlist" in c:
+        return "delete_playlist"
+    if any(w in c for w in ["recommend", "find"]) and any(kw in c for kw in ["song", "artist", "genre", "music"]):
+        return "get_recommendations"
+    if "play" in c and ("genre" in c or re.search(r"play\s+(rock|pop|jazz|classical|hip.?hop|electronic|country|metal|indie|r&b|soul|folk|punk)\s*(music)?$", c)):
+        return "play_genre"
     if "pause" in c:
         return "pause_playback"
-    if "resume" in c or ("play" in c and "music" in c):
+    if "resume" in c:
         return "resume_playback"
     if any(w in c for w in ["skip", "next"]):
         return "skip_track"
@@ -223,6 +259,141 @@ def run_command(command: str) -> Tuple[str, str]:
             result = sp.play_daylist()
             return (result, result) if isinstance(result, str) else ("Playing your Daylist.", "Playing your Daylist.")
         return _spotify_unconfigured()
+    if intent == "play_liked_songs":
+        if sp and getattr(sp, "sp", None):
+            result = sp.play_liked_songs()
+            return (result, result) if isinstance(result, str) else ("Playing your liked songs.", "Playing your liked songs.")
+        return _spotify_unconfigured()
+    if intent == "play_discover_weekly":
+        if sp and getattr(sp, "sp", None):
+            result = sp.play_discover_weekly()
+            return (result, result) if isinstance(result, str) else ("Playing Discover Weekly.", "Playing Discover Weekly.")
+        return _spotify_unconfigured()
+    if intent == "play_release_radar":
+        if sp and getattr(sp, "sp", None):
+            result = sp.play_release_radar()
+            return (result, result) if isinstance(result, str) else ("Playing Release Radar.", "Playing Release Radar.")
+        return _spotify_unconfigured()
+    if intent == "play_similar":
+        if sp and getattr(sp, "sp", None):
+            result = sp.play_similar()
+            return (result, result) if isinstance(result, str) else ("Playing similar tracks.", "Playing similar tracks.")
+        return _spotify_unconfigured()
+    if intent == "mute":
+        if sp and getattr(sp, "sp", None):
+            result = sp.mute()
+            return (result, result) if isinstance(result, str) else ("Spotify muted.", "Spotify muted.")
+        return _spotify_unconfigured()
+    if intent == "add_to_queue":
+        if sp and getattr(sp, "sp", None):
+            m_this = re.search(r"add\s+(?:this|the)\s*(?:song\s+)?to\s+queue", command, re.IGNORECASE)
+            m_named = re.search(r"add\s+(.+?)\s+to\s+queue", command, re.IGNORECASE)
+            if m_this or not m_named:
+                uri = sp.get_current_track_uri()
+                if not uri or (isinstance(uri, str) and not uri.startswith("spotify:track:")):
+                    return "No track playing. Play something first or say 'add [song name] to queue'.", "No track playing."
+                result = sp.add_to_queue(uri)
+            else:
+                query = m_named.group(1).strip()
+                if query.lower() in ("this", "the", "this song", "the song"):
+                    uri = sp.get_current_track_uri()
+                    if not uri or (isinstance(uri, str) and not uri.startswith("spotify:track:")):
+                        return "No track playing.", "No track playing."
+                    result = sp.add_to_queue(uri)
+                else:
+                    result = sp.add_to_queue(query)
+            return (result, result) if isinstance(result, str) else ("Added to queue.", "Added to queue.")
+        return _spotify_unconfigured()
+    if intent == "volume_up":
+        if sp and getattr(sp, "sp", None):
+            result = sp.increase_volume(10)
+            return (result, result) if isinstance(result, str) else ("Volume up.", "Volume up.")
+        return _spotify_unconfigured()
+    if intent == "volume_down":
+        if sp and getattr(sp, "sp", None):
+            result = sp.decrease_volume(10)
+            return (result, result) if isinstance(result, str) else ("Volume down.", "Volume down.")
+        return _spotify_unconfigured()
+    if intent == "set_volume":
+        m = re.search(r"set\s+spotify\s+volume\s+to\s+(\d+)%?", command, re.IGNORECASE)
+        if m and sp and getattr(sp, "sp", None):
+            vol = min(100, max(0, int(m.group(1))))
+            result = sp.set_volume(vol)
+            return (result, result) if isinstance(result, str) else (f"Volume set to {vol}%.", f"Volume set to {vol}%.")
+        return _spotify_unconfigured() if not sp else "Say 'set Spotify volume to [0-100]%'.", "Volume not specified."
+    if intent == "increase_volume":
+        m = re.search(r"increase\s+spotify\s+volume(?:\s+by\s+(\d+)%?)?", command, re.IGNORECASE)
+        if m and sp and getattr(sp, "sp", None):
+            amount = int(m.group(1)) if m.group(1) else 10
+            result = sp.increase_volume(amount)
+            return (result, result) if isinstance(result, str) else (f"Increased volume by {amount}%.", f"Increased volume.")
+        return _spotify_unconfigured() if not sp else "Say 'increase Spotify volume' or 'increase Spotify volume by [N]%'.", "Not specified."
+    if intent == "decrease_volume":
+        m = re.search(r"decrease\s+spotify\s+volume(?:\s+by\s+(\d+)%?)?", command, re.IGNORECASE)
+        if m and sp and getattr(sp, "sp", None):
+            amount = int(m.group(1)) if m.group(1) else 10
+            result = sp.decrease_volume(amount)
+            return (result, result) if isinstance(result, str) else (f"Decreased volume by {amount}%.", f"Decreased volume.")
+        return _spotify_unconfigured() if not sp else "Say 'decrease Spotify volume' or 'decrease Spotify volume by [N]%'.", "Not specified."
+    if intent == "create_playlist":
+        m = re.search(r"create\s+(?:a\s+)?playlist\s+called\s+(.+)", command, re.IGNORECASE)
+        if m and sp and getattr(sp, "sp", None):
+            name = m.group(1).strip()
+            if name:
+                result = sp.create_playlist(name)
+                return (result, result) if isinstance(result, str) else (f"Created playlist '{name}'.", f"Created playlist.")
+        if sp and getattr(sp, "sp", None):
+            msg = "What would you like to name the playlist?"
+            return (msg, msg, {"prompt_for": "playlist_name", "follow_up_prefix": "create a playlist called "})
+        return _spotify_unconfigured()
+    if intent == "add_to_playlist":
+        m = re.search(r"add\s+(?:this|the)\s+song\s+to\s+my\s+(.+?)\s+playlist", command, re.IGNORECASE)
+        if m and sp and getattr(sp, "sp", None):
+            playlist_name = m.group(1).strip()
+            uri = sp.get_current_track_uri()
+            if not uri:
+                return "No track playing. Play something first.", "No track playing."
+            result = sp.add_to_playlist(playlist_name, uri)
+            return (result, result) if isinstance(result, str) else (f"Added to {playlist_name}.", "Added to playlist.")
+        return _spotify_unconfigured() if not sp else "Say 'add this song to my [playlist name] playlist'.", "Playlist name not specified."
+    if intent == "delete_playlist":
+        m = re.search(r"delete\s+playlist\s+(.+)", command, re.IGNORECASE)
+        if m and sp and getattr(sp, "sp", None):
+            name = m.group(1).strip()
+            result = sp.delete_playlist(name)
+            return (result, result) if isinstance(result, str) else (f"Deleted playlist '{name}'.", "Playlist deleted.")
+        return _spotify_unconfigured() if not sp else "Say 'delete playlist [name]'.", "Playlist name not specified."
+    if intent == "get_recommendations":
+        m = re.search(r"(?:recommend|find)\s+(songs|artists)\s+like\s+(.+)|(?:recommend|find)\s+(\w+)\s+music", command, re.IGNORECASE)
+        if m and sp and getattr(sp, "sp", None):
+            if m.group(1) and m.group(2):
+                seed_type = "song" if m.group(1).lower() == "songs" else "artist"
+                seed_value = m.group(2).strip()
+            elif m.group(3):
+                seed_type = "genre"
+                seed_value = m.group(3).strip()
+            else:
+                return "Say 'recommend songs like [X]' or 'find [genre] music'.", "Not specified."
+            result = sp.get_recommendations(seed_type, seed_value)
+            return (result, result) if isinstance(result, str) else (f"Playing recommendations for {seed_value}.", "Playing recommendations.")
+        return _spotify_unconfigured() if not sp else "Say 'recommend songs like [X]' or 'find [genre] music'.", "Not specified."
+    if intent == "timed_playback":
+        m = re.search(r"play\s+music\s+for\s+(\d+)\s+(minutes|hours)\s+then\s+stop", command, re.IGNORECASE)
+        if m and sp and getattr(sp, "sp", None):
+            val, unit = int(m.group(1)), m.group(2).lower()
+            seconds = val * 60 if unit == "minutes" else val * 3600
+            result = sp.stop_after_time(seconds)
+            return (result, result) if isinstance(result, str) else (f"Playback will stop in {val} {unit}.", f"Stopping in {val} {unit}.")
+        return _spotify_unconfigured() if not sp else "Say 'play music for [N] minutes/hours then stop'.", "Not specified."
+    if intent == "play_genre":
+        m = re.search(r"play\s+(?:some\s+)?(.+?)\s*(?:music)?\s*$", command, re.IGNORECASE) or re.search(r"play\s+(.+?)\s+music", command, re.IGNORECASE)
+        if m and sp and getattr(sp, "sp", None):
+            genre = m.group(1).strip().lower()
+            if not genre:
+                return "Say 'play [genre]' or 'play [genre] music'.", "Genre not specified."
+            result = sp.get_recommendations("genre", genre)
+            return (result, result) if isinstance(result, str) else (f"Playing {genre} recommendations.", f"Playing {genre}.")
+        return _spotify_unconfigured() if not sp else "Say 'play [genre]' or 'play [genre] music'.", "Genre not specified."
 
     # --- Play artist radio / artist / album / playlist (with name) ---
     if intent == "play_radio":

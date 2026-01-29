@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import { api, type Settings } from "./utils/api";
 
-type TabId = "home" | "weather" | "system" | "chat" | "tools" | "settings";
+type TabId = "home" | "weather" | "system" | "chat" | "tools" | "commands" | "help" | "settings";
 
 const tabs: { id: TabId; label: string }[] = [
   { id: "home", label: "Home" },
@@ -10,6 +10,8 @@ const tabs: { id: TabId; label: string }[] = [
   { id: "system", label: "System" },
   { id: "chat", label: "Chat" },
   { id: "tools", label: "Tools" },
+  { id: "commands", label: "Commands" },
+  { id: "help", label: "Help" },
   { id: "settings", label: "Settings" },
 ];
 
@@ -26,6 +28,8 @@ const App: React.FC = () => {
       {activeTab === "system" && <SystemTab />}
       {activeTab === "chat" && <ChatTab />}
       {activeTab === "tools" && <ToolsTab />}
+      {activeTab === "commands" && <CommandsTab />}
+      {activeTab === "help" && <HelpTab />}
       {activeTab === "settings" && (
         <SettingsTab layoutMode={layoutMode} setLayoutMode={setLayoutMode} />
       )}
@@ -103,6 +107,8 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
   const [scanProgress, setScanProgress] = useState<number>(0);
   const [listening, setListening] = useState<boolean>(false);
   const [duckingEnabled, setDuckingEnabled] = useState<boolean>(false);
+  const [pendingPrompt, setPendingPrompt] = useState<{ message: string; followUpPrefix: string } | null>(null);
+  const [promptInput, setPromptInput] = useState("");
   const scanPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync ducking state from backend on mount
@@ -138,10 +144,21 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
       api
         .command(transcript)
         .then((r) => {
-          setStatus(r.display || r.spoken || "Done.");
+          const res = r as { display?: string; spoken?: string; prompt_for?: string; follow_up_prefix?: string };
+          if (res.prompt_for) {
+            setPendingPrompt({
+              message: res.display || res.spoken || "Enter value:",
+              followUpPrefix: res.follow_up_prefix || "",
+            });
+            setStatus(res.display || res.spoken || "");
+          } else {
+            setStatus(res.display || res.spoken || "Done.");
+            setPendingPrompt(null);
+          }
         })
         .catch((e) => {
           setStatus(`Command failed: ${e instanceof Error ? e.message : String(e)}`);
+          setPendingPrompt(null);
         })
         .finally(() => setListening(false));
     };
@@ -245,6 +262,21 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
     }
   };
 
+  const handlePromptSubmit = async () => {
+    if (!pendingPrompt || !promptInput.trim()) return;
+    const followUp = pendingPrompt.followUpPrefix + promptInput.trim();
+    setPendingPrompt(null);
+    setPromptInput("");
+    setStatus("Creating playlist…");
+    try {
+      const r = await api.command(followUp);
+      const res = r as { display?: string; spoken?: string };
+      setStatus(res.display || res.spoken || "Done.");
+    } catch (e) {
+      setStatus(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
   return (
     <Card title="Home" subtitle="Quick controls & assistant overview.">
       <div className="btn-column">
@@ -289,12 +321,88 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
       <div className="status-card">
         <div className="status-label">Status</div>
         <div className="status-text">{status}</div>
+        {pendingPrompt && (
+          <div className="prompt-follow-up">
+            <p className="muted">{pendingPrompt.message}</p>
+            <div className="prompt-row">
+              <input
+                type="text"
+                className="settings-input"
+                placeholder="Playlist name"
+                value={promptInput}
+                onChange={(e) => setPromptInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handlePromptSubmit()}
+              />
+              <button className="btn primary" onClick={handlePromptSubmit}>
+                Create
+              </button>
+            </div>
+          </div>
+        )}
         <div className="progress-bar">
           <div
             className="progress-inner"
             style={{ width: `${scanProgress}%` }}
           />
         </div>
+      </div>
+    </Card>
+  );
+};
+
+// --- Help tab with search ---
+
+const HELP_SECTIONS = [
+  {
+    id: "audio-ducking",
+    title: "Audio ducking",
+    body: "Audio ducking lowers your system (or Spotify) volume when you speak into the microphone, so your voice is easier to hear over music or other audio. Enable it from the Home tab with “Enable Audio Ducking.” It uses the pycaw library on Windows to control the default output device. If you see “Audio ducking unavailable (pycaw not set up),” the audio device or driver may not support the control the app uses (e.g. on some Windows setups). You can still use the app without ducking.",
+  },
+  {
+    id: "settings",
+    title: "Settings menu",
+    body: "The Settings tab loads and saves options from your project’s settings.json. You can set: Theme (Dark, Nord Dark, High Contrast Dark), Spotify Client ID and Secret and Redirect URI (for “play song” and other Spotify commands), AI provider and API keys (Chat tab), NLP and macro keys (voice), Firefox and GeckoDriver paths, screenshot folder, and other options. Click “Save settings” to write changes. The backend must be running for the Settings tab to load or save.",
+  },
+  {
+    id: "spotify",
+    title: "Using Spotify",
+    body: "Add your Spotify app’s Client ID and Client Secret in Settings (from the Spotify Developer Dashboard), set Redirect URI to http://localhost:8080, and save. Log in once (e.g. from the desktop app or when the API opens a browser) so .spotify_cache is created. Then you can say “play song [name],” “pause,” “play my liked songs,” “play Discover Weekly,” “create a playlist,” and use the other Spotify commands listed in the Commands tab. Say “create a playlist” and you’ll be asked for the name, then the playlist is created.",
+  },
+];
+
+const HelpTab: React.FC = () => {
+  const [search, setSearch] = useState("");
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? HELP_SECTIONS.filter(
+        (s) =>
+          s.title.toLowerCase().includes(q) ||
+          s.body.toLowerCase().includes(q)
+      )
+    : HELP_SECTIONS;
+
+  return (
+    <Card title="Help" subtitle="Search for explanations and how-to.">
+      <div className="help-search-row">
+        <input
+          type="text"
+          className="settings-input help-search"
+          placeholder="Search help…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+      <div className="help-sections">
+        {filtered.length ? (
+          filtered.map((s) => (
+            <section key={s.id} className="help-section">
+              <h3 className="help-section-title">{s.title}</h3>
+              <p className="help-section-body">{s.body}</p>
+            </section>
+          ))
+        ) : (
+          <p className="muted">No help topics match your search.</p>
+        )}
       </div>
     </Card>
   );
@@ -323,6 +431,66 @@ const ChatTab: React.FC = () => (
 const ToolsTab: React.FC = () => (
   <Card title="Tools" subtitle="Screenshots and utilities.">
     <p className="muted">Screenshot and other tools will be triggered from here via /api/tools endpoints.</p>
+  </Card>
+);
+
+// --- Commands tab: reference for voice/text commands ---
+
+const CommandRow: React.FC<{ phrase: string; desc: string; badge?: string }> = ({ phrase, desc, badge }) => (
+  <div className="command-row">
+    <div className="command-phrase">{phrase}</div>
+    <div className="command-desc">{desc}</div>
+    {badge && <span className={`command-badge ${badge === "soon" ? "badge-soon" : "badge-rec"}`}>{badge === "soon" ? "Coming soon" : "Recommended"}</span>}
+  </div>
+);
+
+const CommandsTab: React.FC = () => (
+  <Card title="Commands" subtitle="Voice and text command reference. Say these or type in Chat.">
+    <section className="commands-section">
+      <h2 className="commands-section-title">Spotify</h2>
+
+      <h3 className="commands-subtitle">Currently supported</h3>
+      <div className="command-list">
+        <CommandRow phrase="Play song [name]" desc="Search and play a track. Optional: … by [artist]." />
+        <CommandRow phrase="Play song [name] from my liked songs" desc="Play that track from your Liked Songs." />
+        <CommandRow phrase="Play artist [name]" desc="Play artist’s top tracks (shuffled)." />
+        <CommandRow phrase="Play artist radio [name] / Play radio [name]" desc="Play artist radio." />
+        <CommandRow phrase="Play album [name]" desc="Play an album." />
+        <CommandRow phrase="Play playlist [name]" desc="Play one of your playlists by name." />
+        <CommandRow phrase="Play daylist" desc="Play your Spotify Daylist." />
+        <CommandRow phrase="Play my liked songs" desc="Start playing your Liked Songs library." />
+        <CommandRow phrase="Play Discover Weekly" desc="Play the Discover Weekly playlist." />
+        <CommandRow phrase="Play Release Radar" desc="Play the Release Radar playlist." />
+        <CommandRow phrase="Play [genre] / Play rock music" desc="Play recommendations by genre." />
+        <CommandRow phrase="Play something similar / More like this" desc="Recommendations from current track." />
+        <CommandRow phrase="Pause" desc="Pause playback." />
+        <CommandRow phrase="Resume / Play music" desc="Resume playback." />
+        <CommandRow phrase="Skip / Next" desc="Skip to next track." />
+        <CommandRow phrase="Previous / Back" desc="Go to previous track." />
+        <CommandRow phrase="What’s playing / Current song / Check song" desc="Say what track is playing." />
+        <CommandRow phrase="Like song / Favorite song" desc="Add current track to Liked Songs." />
+        <CommandRow phrase="Unlike song / Remove song / Unfavorite song" desc="Remove current track from Liked Songs." />
+        <CommandRow phrase="Toggle shuffle / Switch shuffle" desc="Turn shuffle on/off." />
+        <CommandRow phrase="Toggle repeat / Switch repeat" desc="Cycle repeat off → context → track." />
+        <CommandRow phrase="Set Spotify volume to [0–100]%" desc="Set playback volume." />
+        <CommandRow phrase="Increase / Decrease Spotify volume … by [N]%" desc="Raise or lower volume (default 10%)." />
+        <CommandRow phrase="Volume up / Volume down" desc="Short aliases for +10% / -10%." />
+        <CommandRow phrase="Mute / Mute Spotify" desc="Set Spotify volume to 0." />
+        <CommandRow phrase="Create a playlist called [name]" desc="Create a new playlist." />
+        <CommandRow phrase="Add this song to my [name] playlist" desc="Add current track to a playlist." />
+        <CommandRow phrase="Delete playlist [name]" desc="Unfollow/delete a playlist." />
+        <CommandRow phrase="Recommend songs like [X] / Find [genre] music" desc="Play recommendations from song/artist/genre." />
+        <CommandRow phrase="Play music for [N] minutes/hours then stop" desc="Timed playback; stops after the time." />
+        <CommandRow phrase="Add to queue / Add [song] to queue" desc="Add current or searched track to queue." />
+      </div>
+
+      <h3 className="commands-subtitle">Not yet supported</h3>
+      <div className="command-list">
+        <CommandRow phrase="Play on [device name]" desc="Transfer playback to another device." badge="soon" />
+        <CommandRow phrase="Save this album" desc="Add current album to your library." badge="soon" />
+        <CommandRow phrase="Clear queue" desc="Not in Spotify Web API; could map to skip until end." badge="soon" />
+      </div>
+    </section>
   </Card>
 );
 

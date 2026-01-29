@@ -130,8 +130,10 @@ async def command(req: CommandRequest) -> Dict[str, Any]:
 
     logger.info("COMMAND request: %s", text)
     try:
-        display, spoken = await asyncio.to_thread(run_assistant_command, text)
-        return {"display": display, "spoken": spoken}
+        result = await asyncio.to_thread(run_assistant_command, text)
+        display, spoken = result[0], result[1]
+        extra = result[2] if len(result) > 2 else {}
+        return {"display": display, "spoken": spoken, **extra}
     except Exception as e:
         logger.exception("Command failed: %s", e)
         msg = str(e)

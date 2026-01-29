@@ -47,6 +47,9 @@ export interface ChatResponse {
 export interface CommandResponse {
   display: string;
   spoken: string;
+  /** When set, frontend should show an input and send follow_up_prefix + user input as next command */
+  prompt_for?: string;
+  follow_up_prefix?: string;
 }
 
 export interface MicItem {

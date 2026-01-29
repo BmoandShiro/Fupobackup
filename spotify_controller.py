@@ -230,6 +230,91 @@ class SpotifyController:
         return "No song is currently playing."
 
     @handle_spotify_exceptions
+    def get_current_track_uri(self):
+        """Get the URI of the currently playing track, or None."""
+        if not self.sp:
+            return None
+        current = self.sp.current_playback()
+        if current and current.get('item') and current['item'].get('uri'):
+            return current['item']['uri']
+        return None
+
+    @handle_spotify_exceptions
+    def play_liked_songs(self):
+        """Start playing the user's Liked Songs library."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        results = self.sp.current_user_saved_tracks(limit=50)
+        if not results or not results.get('items'):
+            return "No liked songs found."
+        uris = [item['track']['uri'] for item in results['items'] if item.get('track') and item['track'].get('uri')]
+        if not uris:
+            return "No liked songs found."
+        self.sp.start_playback(uris=uris)
+        self.sp.shuffle(True)
+        return "Playing your liked songs."
+
+    @handle_spotify_exceptions
+    def _play_named_playlist(self, name_substring):
+        """Find a user playlist whose name contains the given string (case-insensitive) and play it."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        playlists = self.sp.current_user_playlists(limit=50)
+        for p in playlists.get('items', []):
+            if name_substring.lower() in (p.get('name') or '').lower():
+                self.sp.start_playback(context_uri=p['uri'])
+                return f"Playing {p['name']}."
+        return f"Playlist '{name_substring}' not found."
+
+    @handle_spotify_exceptions
+    def play_discover_weekly(self):
+        return self._play_named_playlist("Discover Weekly")
+
+    @handle_spotify_exceptions
+    def play_release_radar(self):
+        return self._play_named_playlist("Release Radar")
+
+    @handle_spotify_exceptions
+    def mute(self):
+        """Set Spotify volume to 0 (mute)."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        self.sp.volume(0)
+        return "Spotify muted."
+
+    @handle_spotify_exceptions
+    def play_similar(self):
+        """Play recommendations based on the current track."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        current = self.sp.current_playback()
+        if not current or not current.get('item') or not current['item'].get('id'):
+            return "No track playing. Play something first, then say 'play something similar'."
+        track_id = current['item']['id']
+        recs = self.sp.recommendations(seed_tracks=[track_id], limit=20)
+        uris = [f"spotify:track:{t['id']}" for t in recs['tracks']]
+        if not uris:
+            return "Could not get recommendations."
+        self.sp.start_playback(uris=uris)
+        self.sp.shuffle(True)
+        return "Playing similar tracks."
+
+    @handle_spotify_exceptions
+    def add_to_queue(self, track_uri_or_query):
+        """Add a track to the queue. Pass a spotify:track: URI or a search query string."""
+        if not self.sp:
+            return "Spotify not initialized. Check authentication."
+        if track_uri_or_query.startswith('spotify:track:'):
+            uri = track_uri_or_query
+        else:
+            results = self.sp.search(q=track_uri_or_query, type='track', limit=1)
+            if not results['tracks']['items']:
+                return f"Track '{track_uri_or_query}' not found."
+            uri = f"spotify:track:{results['tracks']['items'][0]['id']}"
+        self.sp.add_to_queue(uri)
+        return "Added to queue."
+
+    @handle_spotify_exceptions
     def toggle_shuffle(self):
         """Toggle shuffle mode."""
         if not self.sp:
