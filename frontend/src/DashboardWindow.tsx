@@ -22,6 +22,46 @@ function saveOpacity(value: number) {
   }
 }
 
+// Purple outline icons (stroke only), 20x20 viewBox
+const Icons = {
+  mic: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3Z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+    </svg>
+  ),
+  speaker: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+    </svg>
+  ),
+  music: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </svg>
+  ),
+  minus: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
+  close: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  ),
+};
+
+function Sep() {
+  return <span className="dashboard-bar-sep" aria-hidden />;
+}
+
 export const DashboardWindow: React.FC = () => {
   const [status, setStatus] = useState<string>("Ready.");
   const [listening, setListening] = useState(false);
@@ -51,7 +91,6 @@ export const DashboardWindow: React.FC = () => {
     try {
       void import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
         const w = getCurrentWindow();
-        // setOpacity not available in this Tauri version; use background color with alpha
         w.setBackgroundColor({
           r: 15,
           g: 15,
@@ -130,53 +169,103 @@ export const DashboardWindow: React.FC = () => {
     }
   }, [spotifyDuckingEnabled]);
 
+  const handleMinimize = useCallback(() => {
+    try {
+      void import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
+        getCurrentWindow().minimize().catch(() => {});
+      });
+    } catch {
+      // not in Tauri
+    }
+  }, []);
+
+  const handleClose = useCallback(() => {
+    try {
+      void import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
+        getCurrentWindow().close().catch(() => {});
+      });
+    } catch {
+      // not in Tauri
+    }
+  }, []);
+
   return (
-    <div className="dashboard-window">
-      <div className="dashboard-window-drag" data-tauri-drag-region>
-        Fupo Dashboard
+    <div className="dashboard-bar-wrap">
+    <div className="dashboard-bar">
+      <div className="dashboard-bar-drag" data-tauri-drag-region title="Drag to move">
+        <span className="dashboard-bar-logo">Fupo</span>
       </div>
-      <div className="dashboard-window-controls">
-        <button
-          className="btn primary dashboard-btn"
-          onClick={handleListen}
-          disabled={listening}
-        >
-          {listening ? "Listening…" : "Listen"}
-        </button>
-        <button
-          className="btn dashboard-btn"
-          onClick={handleToggleDucking}
-          disabled={duckingAvailable === false}
-          style={duckingEnabled ? { borderColor: "var(--theme-accent)", background: "rgba(168,85,247,0.15)" } : undefined}
-        >
-          {duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
-        </button>
-        <button
-          className="btn dashboard-btn"
-          onClick={handleToggleSpotifyDucking}
-          disabled={spotifyDuckingAvailable === false}
-          style={spotifyDuckingEnabled ? { borderColor: "var(--theme-accent)", background: "rgba(168,85,247,0.15)" } : undefined}
-        >
-          {spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
-        </button>
+      <Sep />
+      <button
+        type="button"
+        className={`dashboard-bar-btn ${listening ? "active" : ""}`}
+        onClick={handleListen}
+        disabled={listening}
+        title="Listen"
+        aria-label="Listen"
+      >
+        <span className="dashboard-bar-icon">{Icons.mic}</span>
+      </button>
+      <Sep />
+      <button
+        type="button"
+        className={`dashboard-bar-btn ${duckingEnabled ? "active" : ""}`}
+        onClick={handleToggleDucking}
+        disabled={duckingAvailable === false}
+        title={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
+        aria-label={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
+      >
+        <span className="dashboard-bar-icon">{Icons.speaker}</span>
+      </button>
+      <Sep />
+      <button
+        type="button"
+        className={`dashboard-bar-btn ${spotifyDuckingEnabled ? "active" : ""}`}
+        onClick={handleToggleSpotifyDucking}
+        disabled={spotifyDuckingAvailable === false}
+        title={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
+        aria-label={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
+      >
+        <span className="dashboard-bar-icon">{Icons.music}</span>
+      </button>
+      <Sep />
+      <div className="dashboard-bar-status" title={status}>
+        <span className="dashboard-bar-status-text">{status}</span>
       </div>
-      <div className="dashboard-window-status">
-        <div className="dashboard-window-status-label">Status</div>
-        <div className="dashboard-window-status-text">{status}</div>
-      </div>
-      <div className="dashboard-window-opacity">
-        <label className="dashboard-window-opacity-label">Opacity</label>
+      <Sep />
+      <div className="dashboard-bar-opacity">
         <input
           type="range"
-          className="dashboard-window-opacity-slider"
+          className="dashboard-bar-opacity-slider"
           min={0.2}
           max={1}
           step={0.05}
           value={opacity}
           onChange={(e) => setOpacityState(parseFloat(e.target.value))}
+          title={`Opacity ${Math.round(opacity * 100)}%`}
+          aria-label="Window opacity"
         />
-        <span className="dashboard-window-opacity-value">{Math.round(opacity * 100)}%</span>
       </div>
+      <Sep />
+      <button
+        type="button"
+        className="dashboard-bar-btn"
+        onClick={handleMinimize}
+        title="Minimize"
+        aria-label="Minimize"
+      >
+        <span className="dashboard-bar-icon">{Icons.minus}</span>
+      </button>
+      <button
+        type="button"
+        className="dashboard-bar-btn"
+        onClick={handleClose}
+        title="Close"
+        aria-label="Close"
+      >
+        <span className="dashboard-bar-icon">{Icons.close}</span>
+      </button>
+    </div>
     </div>
   );
 };

@@ -76,21 +76,27 @@ const App: React.FC = () => {
       try {
         const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
         const base = window.location.origin + (window.location.pathname || "/");
-        const url = base + (base.endsWith("/") ? "" : "") + "#dashboard";
-        const existing = WebviewWindow.getByLabel("dashboard");
+        const url = (base.endsWith("/") ? base : base + "/") + "#dashboard";
+        const existing = await WebviewWindow.getByLabel("dashboard");
         if (existing) {
           await existing.show();
           await existing.setFocus();
         } else {
-          new WebviewWindow("dashboard", {
+          const w = new WebviewWindow("dashboard", {
             url,
-            width: 320,
-            height: 380,
+            width: 440,
+            height: 68,
             decorations: false,
             alwaysOnTop: true,
           });
+          w.once("tauri://created", () => {
+            void w.show();
+          });
+          w.once("tauri://error", () => {
+            // Window creation failed (e.g. permission denied)
+          });
         }
-      } catch {
+      } catch (_e) {
         // not in Tauri or permission denied
       }
     })();
