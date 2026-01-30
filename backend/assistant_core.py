@@ -26,9 +26,10 @@ _executables = None
 
 
 def clear_caches() -> None:
-    """Clear cached Spotify (and other) state so next request uses fresh settings."""
-    global _spotify_controller
+    """Clear cached Spotify, executables, etc. so next request uses fresh data."""
+    global _spotify_controller, _executables
     _spotify_controller = None
+    _executables = None
 
 
 def _load_settings() -> dict:

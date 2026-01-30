@@ -675,7 +675,134 @@ const SystemTab: React.FC = () => {
       {viewMode === "bars" && !latest && (
         <p className="muted">Collecting…</p>
       )}
+
+      <ProgramsSection />
     </Card>
+  );
+};
+
+const ProgramsSection: React.FC = () => {
+  const [executables, setExecutables] = useState<{ name: string; path: string }[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [scanRunning, setScanRunning] = useState(false);
+  const [addStatus, setAddStatus] = useState<string>("");
+  const scanPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const refresh = () => {
+    api.getExecutables()
+      .then((r) => setExecutables(r.executables || []))
+      .catch(() => setExecutables([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    refresh();
+    return () => {
+      if (scanPollRef.current) clearInterval(scanPollRef.current);
+    };
+  }, []);
+
+  const handleScan = async () => {
+    setScanRunning(true);
+    setAddStatus("");
+    try {
+      await api.startScan();
+      scanPollRef.current = setInterval(async () => {
+        try {
+          const s = await api.getScanStatus();
+          if (!s.running) {
+            if (scanPollRef.current) {
+              clearInterval(scanPollRef.current);
+              scanPollRef.current = null;
+            }
+            setScanRunning(false);
+            refresh();
+          }
+        } catch {
+          setScanRunning(false);
+          if (scanPollRef.current) {
+            clearInterval(scanPollRef.current);
+            scanPollRef.current = null;
+          }
+        }
+      }, 500);
+    } catch (e) {
+      setAddStatus(`Scan failed: ${e instanceof Error ? e.message : String(e)}`);
+      setScanRunning(false);
+    }
+  };
+
+  const handleAddPath = async () => {
+    const path = window.prompt("Enter the full path to the executable (e.g. C:\\Program Files\\App\\app.exe):");
+    if (!path?.trim()) return;
+    setAddStatus("");
+    try {
+      const r = await api.addPath(path.trim());
+      setAddStatus(r.message);
+      refresh();
+    } catch (e) {
+      setAddStatus(`Add failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? executables.filter(
+        (e) =>
+          e.name.toLowerCase().includes(q) ||
+          e.path.toLowerCase().includes(q)
+      )
+    : executables;
+
+  return (
+    <div className="programs-section">
+      <h3 className="programs-heading">Programs</h3>
+      <p className="muted programs-hint">
+        Scanned programs you can start via Listen (e.g. &quot;start Chrome&quot;). Scan to refresh the list, or add a path manually.
+      </p>
+      <div className="programs-actions">
+        <button className="btn" onClick={handleScan} disabled={scanRunning}>
+          {scanRunning ? "Scanning…" : "Scan for programs"}
+        </button>
+        <button className="btn primary" onClick={handleAddPath}>
+          Add path…
+        </button>
+      </div>
+      <div className="programs-search-row">
+        <input
+          type="text"
+          className="settings-input programs-search"
+          placeholder="Search programs…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+      {addStatus && <p className="muted programs-status">{addStatus}</p>}
+      {loading ? (
+        <p className="muted">Loading programs…</p>
+      ) : (
+        <div className="programs-list-wrap">
+          {filtered.length === 0 ? (
+            <p className="muted">
+              {executables.length === 0
+                ? "No programs yet. Click “Scan for programs” or “Add path…” to add executables you can start by voice."
+                : "No programs match your search."}
+            </p>
+          ) : (
+            <ul className="programs-list">
+              {filtered.map((e) => (
+                <li key={`${e.name}-${e.path}`} className="programs-item">
+                  <span className="programs-name">{e.name}</span>
+                  <span className="programs-path" title={e.path}>{e.path}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 

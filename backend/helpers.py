@@ -123,6 +123,11 @@ def run_scan(cwd: str | None = None) -> None:
 
         exec_file = os.path.join(base, "executables.json")
         save_executables(executables, exec_file)
+        try:
+            from backend.assistant_core import clear_caches
+            clear_caches()
+        except Exception:
+            pass
         with _scan_lock:
             _scan_state["running"] = False
             _scan_state["progress"] = 100

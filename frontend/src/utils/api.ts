@@ -147,6 +147,10 @@ export const api = {
     return request<ScanStatusResponse>("/api/scan/status");
   },
 
+  getExecutables(): Promise<{ executables: { name: string; path: string }[]; count: number }> {
+    return request<{ executables: { name: string; path: string }[]; count: number }>("/api/executables");
+  },
+
   addPath(path: string): Promise<PathResponse> {
     return request<PathResponse>("/api/path", {
       method: "POST",

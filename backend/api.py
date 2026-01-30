@@ -239,6 +239,17 @@ async def scan_status() -> Dict[str, Any]:
     return helpers.get_scan_state()
 
 
+@app.get("/api/executables")
+async def get_executables() -> Dict[str, Any]:
+    """Return the list of programs (name -> path) from executables.json for System tab."""
+    base = os.getcwd()
+    exec_file = os.path.join(base, "executables.json")
+    raw = helpers.load_executables(exec_file)
+    # Return as list of { name, path } for easier display/sort/filter
+    items = [{"name": k, "path": v} for k, v in sorted(raw.items(), key=lambda x: x[0].lower())]
+    return {"executables": items, "count": len(items)}
+
+
 @app.post("/api/path")
 async def add_path(req: PathRequest) -> Dict[str, Any]:
     """Add an executable path to the list (basename used as key)."""
@@ -251,6 +262,7 @@ async def add_path(req: PathRequest) -> Dict[str, Any]:
     name = os.path.basename(path).lower()
     executables[name] = path
     helpers.save_executables(executables, exec_file)
+    assistant_clear_caches()  # so "start X" voice command sees the new program
     return {"message": f"Added {name} to the list.", "name": name}
 
 
