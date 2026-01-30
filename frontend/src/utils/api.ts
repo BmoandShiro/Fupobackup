@@ -161,8 +161,19 @@ export const api = {
     });
   },
 
-  getDucking(): Promise<{ enabled: boolean; available?: boolean; error?: string }> {
-    return request<{ enabled: boolean; available?: boolean; error?: string }>("/api/ducking");
+  getDucking(): Promise<{ enabled: boolean; available?: boolean; error?: string; spotify_enabled?: boolean; spotify_available?: boolean }> {
+    return request<{ enabled: boolean; available?: boolean; error?: string; spotify_enabled?: boolean; spotify_available?: boolean }>("/api/ducking");
+  },
+
+  setSpotifyDucking(enabled: boolean): Promise<DuckingResponse> {
+    return request<DuckingResponse>("/api/ducking/spotify", {
+      method: "POST",
+      body: JSON.stringify({ enabled }),
+    });
+  },
+
+  getSpotifyDucking(): Promise<{ enabled: boolean; available: boolean }> {
+    return request<{ enabled: boolean; available: boolean }>("/api/ducking/spotify");
   },
 
   getWeather(location?: string): Promise<WeatherResponse> {

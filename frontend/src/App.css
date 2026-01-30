@@ -333,6 +333,35 @@ body {
   accent-color: #a855f7;
 }
 
+.settings-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  max-width: 400px;
+}
+
+.settings-range {
+  flex: 1;
+  min-width: 120px;
+  height: 8px;
+  accent-color: #a855f7;
+  cursor: pointer;
+}
+
+.settings-range-value {
+  min-width: 40px;
+  font-size: 0.9rem;
+  color: #d1d5db;
+}
+
+.settings-hint {
+  margin: -4px 0 0;
+  font-size: 0.8rem;
+  max-width: 420px;
+}
+
 /* Commands tab */
 .commands-section {
   margin-top: 8px;

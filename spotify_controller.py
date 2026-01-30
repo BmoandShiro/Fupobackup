@@ -394,6 +394,18 @@ class SpotifyController:
         self.sp.current_user_unfollow_playlist(playlist_id)
         return f"Deleted playlist '{playlist_name}'"
 
+    def get_current_volume(self):
+        """Return current Spotify device volume (0-100) or None if unavailable."""
+        if not self.sp:
+            return None
+        try:
+            current = self.sp.current_playback()
+            if current and current.get("device") and "volume_percent" in current["device"]:
+                return current["device"]["volume_percent"]
+        except Exception:
+            pass
+        return None
+
     @handle_spotify_exceptions
     def set_volume(self, volume_percent):
         """Set Spotify playback volume (0-100)."""

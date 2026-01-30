@@ -273,9 +273,12 @@ async def set_ducking(req: DuckingRequest) -> Dict[str, Any]:
             from audio_ducking import monitor_and_adjust_volume
         except ImportError:
             raise HTTPException(status_code=501, detail="audio_ducking module not found")
+        from backend.assistant_core import _get_setting
+        ratio = int(_get_setting("audio_ducking_ratio", 50))
+        ratio = max(0, min(100, ratio))  # duck amount: 100 = silent, 0 = no duck
         _ducking_stop.clear()
         original = vol.GetMasterVolumeLevelScalar()
-        reduce = original / 2
+        reduce = original * (1.0 - ratio / 100.0)  # 100% duck = 0 volume (silent)
         _ducking_thread = threading.Thread(
             target=monitor_and_adjust_volume,
             args=(vol, 15, reduce, _ducking_stop),
@@ -298,14 +301,75 @@ async def set_ducking(req: DuckingRequest) -> Dict[str, Any]:
 async def get_ducking() -> Dict[str, Any]:
     """Return whether audio ducking is enabled and if pycaw is available (with error if not)."""
     vol = _init_volume()
-    out: Dict[str, Any] = {"enabled": _ducking_enabled}
+    out: Dict[str, Any] = {"enabled": _ducking_enabled, "spotify_enabled": _spotify_ducking_enabled}
     if vol is None:
         out["available"] = False
         if _volume_init_error:
             out["error"] = _volume_init_error
     else:
         out["available"] = True
+    sp = _get_spotify_for_ducking()
+    out["spotify_available"] = sp is not None and getattr(sp, "sp", None) is not None
     return out
+
+
+# Spotify ducking (separate from system ducking)
+_spotify_ducking_enabled = False
+_spotify_ducking_thread = None
+_spotify_duck_stop = threading.Event()
+
+
+def _get_spotify_for_ducking():
+    """Lazy get Spotify controller for ducking (avoids circular import at module load)."""
+    from backend.assistant_core import _get_spotify
+    return _get_spotify()
+
+
+@app.post("/api/ducking/spotify")
+async def set_spotify_ducking(req: DuckingRequest) -> Dict[str, Any]:
+    """Enable or disable Spotify-only audio ducking (lowers Spotify volume when speaking)."""
+    global _spotify_ducking_enabled, _spotify_ducking_thread, _spotify_duck_stop
+    sp = _get_spotify_for_ducking()
+    if sp is None or getattr(sp, "sp", None) is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Spotify not configured or not authenticated. Add credentials in Settings and log in.",
+        )
+    try:
+        from audio_ducking import monitor_spotify_duck
+    except ImportError:
+        raise HTTPException(status_code=501, detail="audio_ducking module (pyaudio) required for Spotify ducking")
+    if req.enabled:
+        if _spotify_ducking_enabled:
+            return {"enabled": True, "message": "Spotify ducking already enabled."}
+        from backend.assistant_core import _get_setting
+        ratio = int(_get_setting("spotify_ducking_ratio", 100))
+        ratio = max(0, min(100, ratio))
+        _spotify_duck_stop.clear()
+        _spotify_ducking_thread = threading.Thread(
+            target=monitor_spotify_duck,
+            args=(sp, 15, ratio, _spotify_duck_stop),
+            daemon=True,
+        )
+        _spotify_ducking_thread.start()
+        _spotify_ducking_enabled = True
+        return {"enabled": True, "message": "Spotify ducking enabled."}
+    else:
+        if not _spotify_ducking_enabled:
+            return {"enabled": False, "message": "Spotify ducking already disabled."}
+        _spotify_duck_stop.set()
+        if _spotify_ducking_thread and _spotify_ducking_thread.is_alive():
+            _spotify_ducking_thread.join(timeout=2.0)
+        _spotify_ducking_enabled = False
+        return {"enabled": False, "message": "Spotify ducking disabled."}
+
+
+@app.get("/api/ducking/spotify")
+async def get_spotify_ducking() -> Dict[str, Any]:
+    """Return whether Spotify ducking is enabled and if Spotify is available."""
+    sp = _get_spotify_for_ducking()
+    available = sp is not None and getattr(sp, "sp", None) is not None
+    return {"enabled": _spotify_ducking_enabled, "available": available}
 
 
 # --- Weather ---

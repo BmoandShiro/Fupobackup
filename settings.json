@@ -19,5 +19,8 @@
     "system_refresh_interval": 5000,
     "monitor_weather_statements": false,
     "weather_monitor_locations": [],
-    "weather_check_interval": 60
+    "weather_check_interval": 60,
+    "microphone_index": 0,
+    "audio_ducking_ratio": 5,
+    "spotify_ducking_ratio": 100
 }

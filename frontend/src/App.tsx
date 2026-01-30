@@ -113,17 +113,21 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
   const [duckingEnabled, setDuckingEnabled] = useState<boolean>(false);
   const [duckingAvailable, setDuckingAvailable] = useState<boolean | null>(null);
   const [duckingError, setDuckingError] = useState<string | null>(null);
+  const [spotifyDuckingEnabled, setSpotifyDuckingEnabled] = useState<boolean>(false);
+  const [spotifyDuckingAvailable, setSpotifyDuckingAvailable] = useState<boolean | null>(null);
   const [pendingPrompt, setPendingPrompt] = useState<{ message: string; followUpPrefix: string } | null>(null);
   const [promptInput, setPromptInput] = useState("");
   const scanPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Sync ducking state and pycaw availability from backend on mount
+  // Sync ducking state and pycaw/Spotify availability from backend on mount
   useEffect(() => {
     api.getDucking()
       .then((r) => {
         setDuckingEnabled(r.enabled);
         setDuckingAvailable(r.available ?? true);
         setDuckingError(r.error ?? null);
+        setSpotifyDuckingEnabled(r.spotify_enabled ?? false);
+        setSpotifyDuckingAvailable(r.spotify_available ?? false);
       })
       .catch(() => {});
     return () => {
@@ -274,6 +278,17 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
     }
   };
 
+  const handleToggleSpotifyDucking = async () => {
+    const next = !spotifyDuckingEnabled;
+    try {
+      const r = await api.setSpotifyDucking(next);
+      setSpotifyDuckingEnabled(r.enabled);
+      setStatus(r.message);
+    } catch (e) {
+      setStatus(`Spotify ducking: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
   const handlePromptSubmit = async () => {
     if (!pendingPrompt || !promptInput.trim()) return;
     const followUp = pendingPrompt.followUpPrefix + promptInput.trim();
@@ -328,6 +343,18 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
           }
         >
           {duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
+        </button>
+        <button
+          className="btn"
+          onClick={handleToggleSpotifyDucking}
+          disabled={spotifyDuckingAvailable === false}
+          style={
+            spotifyDuckingEnabled
+              ? { borderColor: "#a855f7", background: "#161320" }
+              : undefined
+          }
+        >
+          {spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
         </button>
       </div>
       {duckingAvailable === false && duckingError && (
@@ -853,6 +880,8 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
         monitor_weather_statements: bool(settings.monitor_weather_statements),
         weather_check_interval: num(settings.weather_check_interval, 60),
         microphone_index: num(settings.microphone_index, 0),
+        audio_ducking_ratio: num(settings.audio_ducking_ratio, 50),
+        spotify_ducking_ratio: num(settings.spotify_ducking_ratio, 100),
       };
       if (Array.isArray(settings.weather_monitor_locations)) {
         toSave.weather_monitor_locations = settings.weather_monitor_locations;
@@ -898,6 +927,42 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
             )}
           </select>
         </div>
+
+        <h3 className="settings-heading">Audio ducking (system)</h3>
+        <div className="settings-row">
+          <label className="settings-label">Duck amount (%)</label>
+          <div className="settings-slider-row">
+            <input
+              type="range"
+              className="settings-range"
+              min={0}
+              max={100}
+              step={5}
+              value={num(settings.audio_ducking_ratio, 50)}
+              onChange={(e) => update("audio_ducking_ratio", parseInt(e.target.value, 10) || 50)}
+            />
+            <span className="settings-range-value">{num(settings.audio_ducking_ratio, 50)}%</span>
+          </div>
+        </div>
+        <p className="muted settings-hint">100% = silent when speaking, 0% = no duck. Controls system (pycaw) volume.</p>
+
+        <h3 className="settings-heading">Spotify ducking</h3>
+        <div className="settings-row">
+          <label className="settings-label">Spotify duck amount (%)</label>
+          <div className="settings-slider-row">
+            <input
+              type="range"
+              className="settings-range"
+              min={0}
+              max={100}
+              step={5}
+              value={num(settings.spotify_ducking_ratio, 100)}
+              onChange={(e) => update("spotify_ducking_ratio", parseInt(e.target.value, 10) || 100)}
+            />
+            <span className="settings-range-value">{num(settings.spotify_ducking_ratio, 100)}%</span>
+          </div>
+        </div>
+        <p className="muted settings-hint">When Spotify ducking is on, Spotify volume drops by this amount (100% = mute). Separate from system ducking.</p>
 
         <h3 className="settings-heading">Layout</h3>
         <div className="settings-row">
