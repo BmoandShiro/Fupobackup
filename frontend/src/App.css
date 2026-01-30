@@ -366,6 +366,17 @@ body {
   color: var(--theme-text-heading);
 }
 
+.settings-save-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: 16px;
+  margin-bottom: -32px;
+  padding: 12px 0 8px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
 .settings-hint {
   margin: -4px 0 0;
   font-size: 0.8rem;

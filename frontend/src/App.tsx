@@ -1534,7 +1534,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
           />
         </div>
 
-        <div className="settings-row" style={{ marginTop: "16px" }}>
+        <div className="settings-save-footer">
           <button className="btn primary" onClick={handleSave}>
             Save settings
           </button>
