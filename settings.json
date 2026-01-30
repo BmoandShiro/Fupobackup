@@ -22,5 +22,6 @@
     "weather_check_interval": 60,
     "microphone_index": 0,
     "audio_ducking_ratio": 5,
-    "spotify_ducking_ratio": 25
+    "spotify_ducking_ratio": 25,
+    "read_status_after_command": true
 }

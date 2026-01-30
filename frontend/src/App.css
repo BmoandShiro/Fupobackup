@@ -888,3 +888,172 @@ body {
 .chat-input-row .settings-input {
   flex: 1;
 }
+
+/* Floating dashboard (draggable bar, home buttons + open main window) */
+.floating-dashboard {
+  position: fixed;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  min-height: 44px;
+  background: rgba(26, 26, 26, 0.95);
+  border: 1px solid var(--theme-accent);
+  border-radius: 22px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  user-select: none;
+}
+
+.floating-dashboard-drag {
+  width: 20px;
+  min-width: 20px;
+  height: 100%;
+  min-height: 44px;
+  cursor: grab;
+  border-radius: 22px 0 0 22px;
+  flex-shrink: 0;
+}
+.floating-dashboard-drag:active {
+  cursor: grabbing;
+}
+
+.floating-dashboard-icons {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 4px;
+}
+
+.floating-dashboard-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  margin: 0 2px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--theme-accent);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.floating-dashboard-btn:hover {
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--theme-accent);
+}
+.floating-dashboard-btn.active {
+  background: rgba(168, 85, 247, 0.25);
+  color: var(--theme-accent);
+}
+
+.floating-dashboard-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+.floating-dashboard-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.floating-dashboard-sep {
+  width: 1px;
+  height: 24px;
+  margin: 0 4px;
+  background: var(--theme-accent);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* Dashboard window (separate, always-on-top) */
+.dashboard-window {
+  min-height: 100vh;
+  padding: 14px;
+  padding-top: 8px;
+  background: var(--theme-bg-panel);
+  color: var(--theme-text-primary);
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-window-drag {
+  padding: 6px 0 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--theme-text-muted);
+  cursor: grab;
+  user-select: none;
+  border-bottom: 1px solid var(--theme-border);
+  margin-bottom: 4px;
+}
+
+.dashboard-window-drag:active {
+  cursor: grabbing;
+}
+
+.dashboard-window-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-window .dashboard-btn {
+  width: 100%;
+}
+
+.dashboard-window-status {
+  flex: 1;
+  min-height: 60px;
+  padding: 10px 12px;
+  background: var(--theme-input-bg);
+  border: 1px solid var(--theme-border);
+  border-radius: 8px;
+}
+
+.dashboard-window-status-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--theme-text-muted);
+  margin-bottom: 6px;
+}
+
+.dashboard-window-status-text {
+  font-size: 0.9rem;
+  color: var(--theme-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dashboard-window-opacity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--theme-border);
+}
+
+.dashboard-window-opacity-label {
+  font-size: 0.9rem;
+  color: var(--theme-text-heading);
+  min-width: 52px;
+}
+
+.dashboard-window-opacity-slider {
+  flex: 1;
+  min-width: 80px;
+  height: 8px;
+  accent-color: var(--theme-accent);
+}
+
+.dashboard-window-opacity-value {
+  font-size: 0.85rem;
+  color: var(--theme-text-muted);
+  min-width: 36px;
+}

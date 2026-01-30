@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import "./App.css";
 import { api, type Settings, type MicItem } from "./utils/api";
@@ -17,7 +17,7 @@ import {
 } from "./theme";
 import { ColorPicker } from "./ColorPicker";
 
-type TabId = "home" | "weather" | "system" | "chat" | "tools" | "commands" | "help" | "settings";
+export type TabId = "home" | "weather" | "system" | "chat" | "tools" | "commands" | "help" | "settings";
 
 const tabs: { id: TabId; label: string }[] = [
   { id: "home", label: "Home" },
@@ -71,9 +71,34 @@ const App: React.FC = () => {
     saveThemeState(themeState);
   }, [themeState]);
 
+  const openDashboardWindow = useCallback(() => {
+    void (async () => {
+      try {
+        const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+        const base = window.location.origin + (window.location.pathname || "/");
+        const url = base + (base.endsWith("/") ? "" : "") + "#dashboard";
+        const existing = WebviewWindow.getByLabel("dashboard");
+        if (existing) {
+          await existing.show();
+          await existing.setFocus();
+        } else {
+          new WebviewWindow("dashboard", {
+            url,
+            width: 320,
+            height: 380,
+            decorations: false,
+            alwaysOnTop: true,
+          });
+        }
+      } catch {
+        // not in Tauri or permission denied
+      }
+    })();
+  }, []);
+
   const renderContent = () => (
     <>
-      {activeTab === "home" && <HomeTab navigateTo={setActiveTab} />}
+      {activeTab === "home" && <HomeTab navigateTo={setActiveTab} onOpenDashboard={openDashboardWindow} />}
       {activeTab === "weather" && <WeatherTab />}
       {activeTab === "system" && <SystemTab />}
       {activeTab === "chat" && <ChatTab />}
@@ -155,11 +180,20 @@ const Card: React.FC<{ title: string; subtitle?: string; children?: React.ReactN
   </div>
 );
 
-interface HomeTabProps {
-  navigateTo: (tab: TabId) => void;
+function speakStatus(text: string) {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.95;
+  window.speechSynthesis.speak(u);
 }
 
-const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
+interface HomeTabProps {
+  navigateTo: (tab: TabId) => void;
+  onOpenDashboard?: () => void;
+}
+
+const HomeTab: React.FC<HomeTabProps> = ({ navigateTo, onOpenDashboard }) => {
   const [status, setStatus] = useState<string>(
     "Welcome to your Desktop Assistant!"
   );
@@ -218,13 +252,25 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
             });
             setStatus(res.display || res.spoken || "");
           } else {
-            setStatus(res.display || res.spoken || "Done.");
+            const msg = res.display || res.spoken || "Done.";
+            setStatus(msg);
             setPendingPrompt(null);
+            api.getSettings().then((s) => {
+              if (s && (s.read_status_after_command === true || s.read_status_after_command === "true")) {
+                speakStatus(msg);
+              }
+            }).catch(() => {});
           }
         })
         .catch((e) => {
-          setStatus(`Command failed: ${e instanceof Error ? e.message : String(e)}`);
+          const msg = `Command failed: ${e instanceof Error ? e.message : String(e)}`;
+          setStatus(msg);
           setPendingPrompt(null);
+          api.getSettings().then((s) => {
+            if (s && (s.read_status_after_command === true || s.read_status_after_command === "true")) {
+              speakStatus(msg);
+            }
+          }).catch(() => {});
         })
         .finally(() => setListening(false));
     };
@@ -280,9 +326,21 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
     try {
       const r = await api.command(followUp);
       const res = r as { display?: string; spoken?: string };
-      setStatus(res.display || res.spoken || "Done.");
+      const msg = res.display || res.spoken || "Done.";
+      setStatus(msg);
+      api.getSettings().then((s) => {
+        if (s && (s.read_status_after_command === true || s.read_status_after_command === "true")) {
+          speakStatus(msg);
+        }
+      }).catch(() => {});
     } catch (e) {
-      setStatus(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+      const msg = `Failed: ${e instanceof Error ? e.message : String(e)}`;
+      setStatus(msg);
+      api.getSettings().then((s) => {
+        if (s && (s.read_status_after_command === true || s.read_status_after_command === "true")) {
+          speakStatus(msg);
+        }
+      }).catch(() => {});
     }
   };
 
@@ -320,6 +378,11 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
         >
           {spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
         </button>
+        {onOpenDashboard && (
+          <button className="btn" onClick={onOpenDashboard}>
+            Open Dashboard
+          </button>
+        )}
       </div>
       {duckingAvailable === false && duckingError && (
         <p className="muted ducking-error" style={{ marginTop: "8px", fontSize: "0.85rem", color: "#f87171" }}>
@@ -1080,6 +1143,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
         microphone_index: num(settings.microphone_index, 0),
         audio_ducking_ratio: num(settings.audio_ducking_ratio, 50),
         spotify_ducking_ratio: num(settings.spotify_ducking_ratio, 100),
+        read_status_after_command: bool(settings.read_status_after_command),
       };
       if (Array.isArray(settings.weather_monitor_locations)) {
         toSave.weather_monitor_locations = settings.weather_monitor_locations;
@@ -1532,6 +1596,16 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
             value={num(settings.weather_check_interval, 60)}
             onChange={(e) => update("weather_check_interval", parseInt(e.target.value, 10) || 60)}
           />
+        </div>
+        <div className="settings-row settings-row-check">
+          <label>
+            <input
+              type="checkbox"
+              checked={bool(settings.read_status_after_command)}
+              onChange={(e) => update("read_status_after_command", e.target.checked)}
+            />
+            Read status message aloud after each voice command
+            </label>
         </div>
 
         <div className="settings-save-footer">
