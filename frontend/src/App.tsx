@@ -1,6 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import "./App.css";
 import { api, type Settings, type MicItem } from "./utils/api";
+import {
+  loadThemeState,
+  saveThemeState,
+  getEffectiveColors,
+  applyTheme,
+  toHexForPicker,
+  type ThemeState,
+  type ThemeColors,
+  type ThemeColorKey,
+  BUILTIN_PRESETS,
+  THEME_COLOR_KEYS,
+  THEME_COLOR_LABELS,
+} from "./theme";
+import { ColorPicker } from "./ColorPicker";
 
 type TabId = "home" | "weather" | "system" | "chat" | "tools" | "commands" | "help" | "settings";
 
@@ -45,10 +60,16 @@ function saveUiPrefs(activeTab: TabId, layoutMode: LayoutMode) {
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>(() => loadUiPrefs().activeTab);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => loadUiPrefs().layoutMode);
+  const [themeState, setThemeState] = useState<ThemeState>(() => loadThemeState());
 
   useEffect(() => {
     saveUiPrefs(activeTab, layoutMode);
   }, [activeTab, layoutMode]);
+
+  useEffect(() => {
+    applyTheme(getEffectiveColors(themeState));
+    saveThemeState(themeState);
+  }, [themeState]);
 
   const renderContent = () => (
     <>
@@ -60,7 +81,12 @@ const App: React.FC = () => {
       {activeTab === "commands" && <CommandsTab />}
       {activeTab === "help" && <HelpTab />}
       {activeTab === "settings" && (
-        <SettingsTab layoutMode={layoutMode} setLayoutMode={setLayoutMode} />
+        <SettingsTab
+          layoutMode={layoutMode}
+          setLayoutMode={setLayoutMode}
+          themeState={themeState}
+          setThemeState={setThemeState}
+        />
       )}
     </>
   );
@@ -941,6 +967,8 @@ const CommandsTab: React.FC = () => (
 interface SettingsTabProps {
   layoutMode: LayoutMode;
   setLayoutMode: (mode: LayoutMode) => void;
+  themeState: ThemeState;
+  setThemeState: React.Dispatch<React.SetStateAction<ThemeState>>;
 }
 
 const str = (v: unknown): string => (v == null ? "" : String(v));
@@ -950,11 +978,63 @@ const bool = (v: unknown): boolean => v === true || v === "true" || v === 1;
 const SettingsTab: React.FC<SettingsTabProps> = ({
   layoutMode,
   setLayoutMode,
+  themeState,
+  setThemeState,
 }) => {
   const [settings, setSettings] = useState<Settings>({});
   const [mics, setMics] = useState<MicItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<string>("");
+  const [themeCustomOpen, setThemeCustomOpen] = useState(false);
+  const [openPickerKey, setOpenPickerKey] = useState<ThemeColorKey | null>(null);
+  const [pickerAnchor, setPickerAnchor] = useState<{ right: number; top: number; height: number } | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{ left: number; top: number } | null>(null);
+  const dragStartRef = useRef<{ clientX: number; clientY: number; left: number; top: number } | null>(null);
+  const effectiveColors = getEffectiveColors(themeState);
+
+  const PANEL_W = 360;
+  const PANEL_H = 420;
+  const PAD = 12;
+
+  const clampPopupPosition = (left: number, top: number) => ({
+    left: Math.max(PAD, Math.min(left, typeof window !== "undefined" ? window.innerWidth - PANEL_W - PAD : left)),
+    top: Math.max(PAD, Math.min(top, typeof window !== "undefined" ? window.innerHeight - PANEL_H - PAD : top)),
+  });
+
+  const openColorPicker = (key: ThemeColorKey, target: HTMLElement) => {
+    const rect = target.getBoundingClientRect();
+    const initialLeft = rect.right + 8;
+    const initialTop = rect.top;
+    setOpenPickerKey(key);
+    setPickerAnchor({ right: rect.right, top: rect.top, height: rect.height });
+    setPopupPosition(clampPopupPosition(initialLeft, initialTop));
+  };
+  const closeColorPicker = () => {
+    setOpenPickerKey(null);
+    setPickerAnchor(null);
+    setPopupPosition(null);
+    dragStartRef.current = null;
+  };
+
+  const handlePopupDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (popupPosition == null) return;
+    e.preventDefault();
+    dragStartRef.current = { clientX: e.clientX, clientY: e.clientY, left: popupPosition.left, top: popupPosition.top };
+    const onMove = (ev: MouseEvent) => {
+      if (dragStartRef.current == null) return;
+      const { clientX, clientY, left, top } = dragStartRef.current;
+      setPopupPosition(clampPopupPosition(left + ev.clientX - clientX, top + ev.clientY - clientY));
+    };
+    const onUp = () => {
+      dragStartRef.current = null;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+  const isCustom = themeState.activePresetName === "Custom";
+  const customColors = themeState.customColors ?? effectiveColors;
 
   useEffect(() => {
     api
@@ -1103,17 +1183,161 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
 
         <h3 className="settings-heading">Theme</h3>
         <div className="settings-row">
-          <label className="settings-label">Theme</label>
+          <label className="settings-label">Preset</label>
           <select
-            className="settings-input"
-            value={str(settings.theme)}
-            onChange={(e) => update("theme", e.target.value)}
+            className="settings-input theme-preset-select"
+            value={themeState.activePresetName}
+            onChange={(e) => {
+              const name = e.target.value;
+              setThemeState((prev) => {
+                const next = { ...prev, activePresetName: name };
+                applyTheme(getEffectiveColors(next));
+                saveThemeState(next);
+                return next;
+              });
+            }}
           >
-            <option value="Dark">Dark</option>
-            <option value="Nord Dark">Nord Dark</option>
-            <option value="High Contrast Dark">High Contrast Dark</option>
+            {BUILTIN_PRESETS.map((p) => (
+              <option key={p.name} value={p.name}>{p.name}</option>
+            ))}
+            {themeState.userPresets.map((p) => (
+              <option key={p.name} value={p.name}>{p.name} (saved)</option>
+            ))}
+            {isCustom && <option value="Custom">Custom</option>}
           </select>
         </div>
+        <div className="theme-actions-row">
+          <button type="button" className="btn" onClick={() => setThemeCustomOpen((o) => !o)}>
+            {themeCustomOpen ? "Hide color pickers" : "Customize colors…"}
+          </button>
+          <button
+            type="button"
+            className="btn primary"
+            onClick={() => {
+              const name = window.prompt("Preset name:", "My theme");
+              if (!name?.trim()) return;
+              const trimmed = name.trim();
+              if (BUILTIN_PRESETS.some((p) => p.name === trimmed) || themeState.userPresets.some((p) => p.name === trimmed)) {
+                setSaveStatus("A preset with that name already exists.");
+                return;
+              }
+              setThemeState((prev) => ({
+                ...prev,
+                userPresets: [...prev.userPresets, { name: trimmed, colors: getEffectiveColors(prev) }],
+                activePresetName: trimmed,
+                customColors: null,
+              }));
+              setSaveStatus("Saved as preset.");
+              setTimeout(() => setSaveStatus(""), 2000);
+            }}
+          >
+            Save current as preset
+          </button>
+          {themeState.userPresets.length > 0 && (
+            <select
+              className="settings-input theme-delete-select"
+              value=""
+              onChange={(e) => {
+                const name = e.target.value;
+                if (!name) return;
+                e.target.value = "";
+                setThemeState((prev) => ({
+                  ...prev,
+                  userPresets: prev.userPresets.filter((p) => p.name !== name),
+                  activePresetName: prev.activePresetName === name ? "Dark" : prev.activePresetName,
+                }));
+              }}
+              title="Delete a saved preset"
+            >
+              <option value="">Delete preset…</option>
+              {themeState.userPresets.map((p) => (
+                <option key={p.name} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+        {themeCustomOpen && (
+          <>
+          <p className="muted" style={{ marginBottom: 8 }}>
+            Click a color swatch (colored square) to open the picker.
+          </p>
+          <div className="theme-color-grid">
+            {THEME_COLOR_KEYS.map((key) => (
+              <div key={key} className="settings-row theme-color-row">
+                <label className="settings-label theme-color-label" title={key}>
+                  {THEME_COLOR_LABELS[key]}
+                </label>
+                <div className="theme-color-swatch-wrap">
+                  <button
+                    type="button"
+                    className="theme-color-swatch-btn"
+                    style={{ background: toHexForPicker(isCustom ? customColors[key] : effectiveColors[key]) }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openColorPicker(key, e.currentTarget);
+                    }}
+                    title="Open color picker"
+                    aria-label={`Pick color for ${THEME_COLOR_LABELS[key]}`}
+                  />
+                  <input
+                    type="text"
+                    className="settings-input theme-color-hex"
+                    value={isCustom ? customColors[key] : effectiveColors[key]}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      setThemeState((prev) => {
+                        const nextCustom: ThemeColors = { ...getEffectiveColors(prev), [key]: val || (prev.customColors?.[key] ?? "#a855f7") };
+                        return { ...prev, activePresetName: "Custom", customColors: nextCustom };
+                      });
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          {openPickerKey &&
+            pickerAnchor &&
+            popupPosition != null &&
+            createPortal(
+              <div
+                className="color-picker-popup-backdrop"
+                role="presentation"
+                aria-hidden="false"
+              >
+                <div
+                  className="color-picker-popup-panel"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={`Color picker: ${THEME_COLOR_LABELS[openPickerKey]}`}
+                  style={{ left: popupPosition.left, top: popupPosition.top }}
+                >
+                  <div
+                    className="color-picker-popup-drag-handle"
+                    onMouseDown={handlePopupDragStart}
+                    title="Drag to move"
+                  >
+                    <p className="color-picker-popup-title">
+                      {THEME_COLOR_LABELS[openPickerKey]}
+                    </p>
+                  </div>
+                  <ColorPicker
+                    value={toHexForPicker(isCustom ? customColors[openPickerKey] : effectiveColors[openPickerKey])}
+                    onChange={(hex) => {
+                      setThemeState((prev) => {
+                        const nextCustom: ThemeColors = { ...getEffectiveColors(prev), [openPickerKey]: hex };
+                        return { ...prev, activePresetName: "Custom", customColors: nextCustom };
+                      });
+                    }}
+                    onClose={closeColorPicker}
+                  />
+                </div>
+              </div>,
+              document.body
+            )}
+          </>
+        )}
+        {saveStatus && <p className="muted theme-save-status">{saveStatus}</p>}
 
         <h3 className="settings-heading">Spotify (for “play song” etc.)</h3>
         <div className="settings-row">
