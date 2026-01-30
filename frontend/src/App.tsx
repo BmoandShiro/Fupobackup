@@ -17,9 +17,38 @@ const tabs: { id: TabId; label: string }[] = [
 
 type LayoutMode = "sidebar" | "top";
 
+const UI_PREFS_KEY = "fupo_ui_prefs";
+const VALID_TAB_IDS: TabId[] = ["home", "weather", "system", "chat", "tools", "commands", "help", "settings"];
+const VALID_LAYOUTS: LayoutMode[] = ["sidebar", "top"];
+
+function loadUiPrefs(): { activeTab: TabId; layoutMode: LayoutMode } {
+  try {
+    const raw = localStorage.getItem(UI_PREFS_KEY);
+    if (!raw) return { activeTab: "home", layoutMode: "sidebar" };
+    const parsed = JSON.parse(raw) as { activeTab?: string; layoutMode?: string };
+    const activeTab = VALID_TAB_IDS.includes(parsed.activeTab as TabId) ? (parsed.activeTab as TabId) : "home";
+    const layoutMode = VALID_LAYOUTS.includes(parsed.layoutMode as LayoutMode) ? (parsed.layoutMode as LayoutMode) : "sidebar";
+    return { activeTab, layoutMode };
+  } catch {
+    return { activeTab: "home", layoutMode: "sidebar" };
+  }
+}
+
+function saveUiPrefs(activeTab: TabId, layoutMode: LayoutMode) {
+  try {
+    localStorage.setItem(UI_PREFS_KEY, JSON.stringify({ activeTab, layoutMode }));
+  } catch {
+    // ignore
+  }
+}
+
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabId>("home");
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>("sidebar");
+  const [activeTab, setActiveTab] = useState<TabId>(() => loadUiPrefs().activeTab);
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => loadUiPrefs().layoutMode);
+
+  useEffect(() => {
+    saveUiPrefs(activeTab, layoutMode);
+  }, [activeTab, layoutMode]);
 
   const renderContent = () => (
     <>
@@ -108,7 +137,6 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
   const [status, setStatus] = useState<string>(
     "Welcome to your Desktop Assistant!"
   );
-  const [scanProgress, setScanProgress] = useState<number>(0);
   const [listening, setListening] = useState<boolean>(false);
   const [duckingEnabled, setDuckingEnabled] = useState<boolean>(false);
   const [duckingAvailable, setDuckingAvailable] = useState<boolean | null>(null);
@@ -117,7 +145,6 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
   const [spotifyDuckingAvailable, setSpotifyDuckingAvailable] = useState<boolean | null>(null);
   const [pendingPrompt, setPendingPrompt] = useState<{ message: string; followUpPrefix: string } | null>(null);
   const [promptInput, setPromptInput] = useState("");
-  const scanPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Sync ducking state and pycaw/Spotify availability from backend on mount
   useEffect(() => {
@@ -130,9 +157,6 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
         setSpotifyDuckingAvailable(r.spotify_available ?? false);
       })
       .catch(() => {});
-    return () => {
-      if (scanPollRef.current) clearInterval(scanPollRef.current);
-    };
   }, []);
 
   const handleListen = () => {
@@ -199,74 +223,6 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
     }
   };
 
-  const handleReset = () => {
-    setStatus("Please restart the Fupo app from the taskbar or shortcut to reset.");
-  };
-
-  const handleScan = async () => {
-    setScanProgress(0);
-    setStatus("Starting scan…");
-    try {
-      await api.startScan();
-      setStatus("Scanning for programs…");
-      scanPollRef.current = setInterval(async () => {
-        try {
-          const s = await api.getScanStatus();
-          setScanProgress(s.progress);
-          setStatus(s.message);
-          if (!s.running) {
-            if (scanPollRef.current) {
-              clearInterval(scanPollRef.current);
-              scanPollRef.current = null;
-            }
-            if (s.error) setStatus(`Scan failed: ${s.error}`);
-          }
-        } catch {
-          if (scanPollRef.current) {
-            clearInterval(scanPollRef.current);
-            scanPollRef.current = null;
-          }
-          setStatus("Could not get scan status.");
-        }
-      }, 500);
-    } catch (e) {
-      setStatus(`Scan failed: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  };
-
-  const handleShowMics = async () => {
-    try {
-      const r = await api.getMics();
-      setStatus(r.message || "No microphones listed.");
-    } catch (e) {
-      setStatus(`Microphones: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  };
-
-  const handleShowShortcuts = async () => {
-    try {
-      const r = await api.getShortcuts();
-      setStatus(r.message || "No desktop shortcuts found.");
-    } catch (e) {
-      setStatus(`Shortcuts: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  };
-
-  const handleAddPath = async () => {
-    const path = window.prompt("Enter the executable path:");
-    if (!path?.trim()) return;
-    try {
-      const r = await api.addPath(path.trim());
-      setStatus(r.message);
-    } catch (e) {
-      setStatus(`Add path failed: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  };
-
-  const handleWeather = () => {
-    navigateTo("weather");
-  };
-
   const handleToggleDucking = async () => {
     const next = !duckingEnabled;
     try {
@@ -313,24 +269,6 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
           disabled={listening}
         >
           {listening ? "Listening…" : "Listen"}
-        </button>
-        <button className="btn" onClick={handleReset}>
-          Reset Application
-        </button>
-        <button className="btn" onClick={handleScan}>
-          Scan for Programs
-        </button>
-        <button className="btn" onClick={handleShowMics}>
-          Show Microphones
-        </button>
-        <button className="btn" onClick={handleShowShortcuts}>
-          Show Shortcuts
-        </button>
-        <button className="btn" onClick={handleAddPath}>
-          Add Path…
-        </button>
-        <button className="btn" onClick={handleWeather}>
-          🌦️ Weather Dashboard
         </button>
         <button
           className="btn"
@@ -384,12 +322,6 @@ const HomeTab: React.FC<HomeTabProps> = ({ navigateTo }) => {
             </div>
           </div>
         )}
-        <div className="progress-bar">
-          <div
-            className="progress-inner"
-            style={{ width: `${scanProgress}%` }}
-          />
-        </div>
       </div>
     </Card>
   );
@@ -574,6 +506,27 @@ const SystemTab: React.FC = () => {
     latest: { cpu_percent: number; ram_percent: number; ram_used_gb: number; ram_total_gb: number; disk_percent: number } | null;
   }>({ cpu: [], ram: [], disk: [], latest: null });
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string>("");
+
+  const handleShowMics = async () => {
+    setInfoMessage("");
+    try {
+      const r = await api.getMics();
+      setInfoMessage(r.message || "No microphones listed.");
+    } catch (e) {
+      setInfoMessage(`Microphones: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const handleShowShortcuts = async () => {
+    setInfoMessage("");
+    try {
+      const r = await api.getShortcuts();
+      setInfoMessage(r.message || "No desktop shortcuts found.");
+    } catch (e) {
+      setInfoMessage(`Shortcuts: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
 
   const refresh = () => {
     api.getSystem()
@@ -604,6 +557,12 @@ const SystemTab: React.FC = () => {
   }
 
   const latest = history.latest;
+  const maxCpu = history.cpu.length ? Math.round(Math.max(...history.cpu)) : null;
+  const maxRam = history.ram.length ? Math.round(Math.max(...history.ram)) : null;
+  const maxDisk = history.disk.length ? Math.round(Math.max(...history.disk)) : null;
+  const maxSuffix = (current: number, max: number | null) =>
+    max != null ? ` (max ${max}%)` : "";
+
   return (
     <Card title="System" subtitle="Live CPU, RAM, and disk usage. Updates every 2s.">
       <div className="system-view-toggle">
@@ -631,19 +590,19 @@ const SystemTab: React.FC = () => {
             data={history.cpu}
             color="#a855f7"
             label="CPU"
-            currentValue={latest ? `${latest.cpu_percent}%` : "—"}
+            currentValue={latest ? `${latest.cpu_percent}%${maxSuffix(latest.cpu_percent, maxCpu)}` : "—"}
           />
           <LiveLineChart
             data={history.ram}
             color="#6366f1"
             label="RAM"
-            currentValue={latest ? `${latest.ram_percent}% (${latest.ram_used_gb} / ${latest.ram_total_gb} GB)` : "—"}
+            currentValue={latest ? `${latest.ram_percent}% (${latest.ram_used_gb} / ${latest.ram_total_gb} GB)${maxSuffix(latest.ram_percent, maxRam)}` : "—"}
           />
           <LiveLineChart
             data={history.disk}
             color="#22c55e"
             label="Disk"
-            currentValue={latest ? `${latest.disk_percent}%` : "—"}
+            currentValue={latest ? `${latest.disk_percent}%${maxSuffix(latest.disk_percent, maxDisk)}` : "—"}
           />
         </div>
       )}
@@ -654,27 +613,42 @@ const SystemTab: React.FC = () => {
             <div className="system-bar-wrap">
               <div className="system-bar" style={{ width: `${Math.min(100, latest.cpu_percent)}%` }} />
             </div>
-            <span className="system-value">{latest.cpu_percent}%</span>
+            <span className="system-value">{latest.cpu_percent}%{maxSuffix(latest.cpu_percent, maxCpu)}</span>
           </div>
           <div className="system-row">
             <span className="system-label">RAM</span>
             <div className="system-bar-wrap">
               <div className="system-bar" style={{ width: `${latest.ram_percent}%` }} />
             </div>
-            <span className="system-value">{latest.ram_percent}% ({latest.ram_used_gb} / {latest.ram_total_gb} GB)</span>
+            <span className="system-value">{latest.ram_percent}% ({latest.ram_used_gb} / {latest.ram_total_gb} GB){maxSuffix(latest.ram_percent, maxRam)}</span>
           </div>
           <div className="system-row">
             <span className="system-label">Disk</span>
             <div className="system-bar-wrap">
               <div className="system-bar" style={{ width: `${latest.disk_percent}%` }} />
             </div>
-            <span className="system-value">{latest.disk_percent}%</span>
+            <span className="system-value">{latest.disk_percent}%{maxSuffix(latest.disk_percent, maxDisk)}</span>
           </div>
         </div>
       )}
       {viewMode === "bars" && !latest && (
         <p className="muted">Collecting…</p>
       )}
+
+      <div className="system-info-section">
+        <h3 className="programs-heading">System info</h3>
+        <div className="programs-actions">
+          <button className="btn" onClick={handleShowMics}>
+            Show Microphones
+          </button>
+          <button className="btn" onClick={handleShowShortcuts}>
+            Show Shortcuts
+          </button>
+        </div>
+        {infoMessage && (
+          <pre className="muted system-info-message">{infoMessage}</pre>
+        )}
+      </div>
 
       <ProgramsSection />
     </Card>

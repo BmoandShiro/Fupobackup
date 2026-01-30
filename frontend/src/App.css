@@ -602,6 +602,23 @@ body {
   font-size: 0.9rem;
   color: #9ca3af;
 }
+.system-info-section {
+  margin-top: 1rem;
+}
+.system-info-section .programs-actions {
+  margin-bottom: 8px;
+}
+.system-info-message {
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
 
 /* Chat tab (message list) */
 .chat-messages {
