@@ -71,10 +71,28 @@ body {
   flex: 1;
   padding: 16px 20px;
   overflow: auto;
-  /* Dark-themed scrollbar */
+  min-height: 0;
   scrollbar-color: #333333 #0f0f12;
   scrollbar-width: thin;
 }
+
+.main-and-footer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-footer {
+  padding: 10px 20px;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  background: rgba(15, 15, 18, 0.97);
+  border-top: 1px solid #222222;
+  text-align: center;
+  flex-shrink: 0;
+}
+
 .content::-webkit-scrollbar {
   width: 10px;
   height: 10px;

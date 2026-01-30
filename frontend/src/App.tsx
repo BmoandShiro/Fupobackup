@@ -54,6 +54,7 @@ const App: React.FC = () => {
           </nav>
         </header>
         <main className="content">{renderContent()}</main>
+        <footer className="app-footer">Developed by: BMOandShiro v1.0.0</footer>
       </div>
     );
   }
@@ -75,7 +76,10 @@ const App: React.FC = () => {
           ))}
         </nav>
       </aside>
-      <main className="content">{renderContent()}</main>
+      <div className="main-and-footer">
+        <main className="content">{renderContent()}</main>
+        <footer className="app-footer">Developed by: BMOandShiro v1.0.0</footer>
+      </div>
     </div>
   );
 };
