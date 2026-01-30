@@ -9,6 +9,9 @@ pydantic>=2.0.0
 pycaw>=20230407
 comtypes>=1.2.0
 
+# Optional: GPU usage in System tab (NVIDIA only; chart shows "—" if not installed or no NVIDIA GPU)
+pynvml>=11.0.0
+
 # Optional: voice commands, Spotify, tools
 # speech_recognition
 # spotipy

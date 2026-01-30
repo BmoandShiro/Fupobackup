@@ -102,6 +102,8 @@ export interface SystemResponse {
   ram_used_gb: number;
   ram_total_gb: number;
   disk_percent: number;
+  /** NVIDIA GPU utilization 0–100; omitted or null when no GPU / pynvml not available */
+  gpu_percent?: number | null;
 }
 
 export interface ScreenshotResponse {

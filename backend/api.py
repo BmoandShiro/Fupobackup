@@ -406,9 +406,22 @@ async def get_weather(location: str | None = None) -> Dict[str, Any]:
 
 # --- System (CPU/RAM/disk, headless with psutil) ---
 
+def _get_gpu_percent() -> float | None:
+    """Return GPU utilization 0–100 for first NVIDIA GPU, or None if unavailable."""
+    try:
+        import pynvml
+        pynvml.nvmlInit()
+        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+        util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+        pynvml.nvmlShutdown()
+        return float(util.gpu)
+    except Exception:
+        return None
+
+
 @app.get("/api/system")
 async def get_system() -> Dict[str, Any]:
-    """Return current CPU, RAM, and disk usage (no Qt)."""
+    """Return current CPU, RAM, disk, and optional GPU usage (no Qt)."""
     try:
         import psutil
     except ImportError:
@@ -424,13 +437,17 @@ async def get_system() -> Dict[str, Any]:
         disk_percent = disk.percent
     except Exception:
         disk_percent = 0.0
-    return {
+    gpu_percent = _get_gpu_percent()
+    out: Dict[str, Any] = {
         "cpu_percent": round(cpu_percent, 1),
         "ram_percent": round(ram.percent, 1),
         "ram_used_gb": round(ram.used / (1024 ** 3), 2),
         "ram_total_gb": round(ram.total / (1024 ** 3), 2),
         "disk_percent": round(disk_percent, 1),
     }
+    if gpu_percent is not None:
+        out["gpu_percent"] = round(gpu_percent, 1)
+    return out
 
 
 # --- Tools (screenshot) ---

@@ -503,8 +503,9 @@ const SystemTab: React.FC = () => {
     cpu: number[];
     ram: number[];
     disk: number[];
-    latest: { cpu_percent: number; ram_percent: number; ram_used_gb: number; ram_total_gb: number; disk_percent: number } | null;
-  }>({ cpu: [], ram: [], disk: [], latest: null });
+    gpu: number[];
+    latest: { cpu_percent: number; ram_percent: number; ram_used_gb: number; ram_total_gb: number; disk_percent: number; gpu_percent?: number | null } | null;
+  }>({ cpu: [], ram: [], disk: [], gpu: [], latest: null });
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string>("");
 
@@ -536,7 +537,8 @@ const SystemTab: React.FC = () => {
           const cpu = [...prev.cpu, s.cpu_percent].slice(-MAX_POINTS);
           const ram = [...prev.ram, s.ram_percent].slice(-MAX_POINTS);
           const disk = [...prev.disk, s.disk_percent].slice(-MAX_POINTS);
-          return { cpu, ram, disk, latest: s };
+          const gpu = s.gpu_percent != null ? [...prev.gpu, s.gpu_percent].slice(-MAX_POINTS) : prev.gpu;
+          return { cpu, ram, disk, gpu, latest: s };
         });
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
@@ -560,8 +562,10 @@ const SystemTab: React.FC = () => {
   const maxCpu = history.cpu.length ? Math.round(Math.max(...history.cpu)) : null;
   const maxRam = history.ram.length ? Math.round(Math.max(...history.ram)) : null;
   const maxDisk = history.disk.length ? Math.round(Math.max(...history.disk)) : null;
+  const maxGpu = history.gpu.length ? Math.round(Math.max(...history.gpu)) : null;
   const maxSuffix = (current: number, max: number | null) =>
     max != null ? ` (max ${max}%)` : "";
+  const gpuPercent = latest?.gpu_percent ?? null;
 
   return (
     <Card title="System" subtitle="Live CPU, RAM, and disk usage. Updates every 2s.">
@@ -604,6 +608,12 @@ const SystemTab: React.FC = () => {
             label="Disk"
             currentValue={latest ? `${latest.disk_percent}%${maxSuffix(latest.disk_percent, maxDisk)}` : "—"}
           />
+          <LiveLineChart
+            data={history.gpu}
+            color="#f97316"
+            label="GPU"
+            currentValue={gpuPercent != null ? `${gpuPercent}%${maxSuffix(gpuPercent, maxGpu)}` : "—"}
+          />
         </div>
       )}
       {viewMode === "bars" && latest && (
@@ -628,6 +638,13 @@ const SystemTab: React.FC = () => {
               <div className="system-bar" style={{ width: `${latest.disk_percent}%` }} />
             </div>
             <span className="system-value">{latest.disk_percent}%{maxSuffix(latest.disk_percent, maxDisk)}</span>
+          </div>
+          <div className="system-row">
+            <span className="system-label">GPU</span>
+            <div className="system-bar-wrap">
+              <div className="system-bar" style={{ width: `${gpuPercent != null ? Math.min(100, gpuPercent) : 0}%` }} />
+            </div>
+            <span className="system-value">{gpuPercent != null ? `${gpuPercent}%${maxSuffix(gpuPercent, maxGpu)}` : "—"}</span>
           </div>
         </div>
       )}
