@@ -91,17 +91,12 @@ export const DashboardWindow: React.FC = () => {
     try {
       void import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
         const w = getCurrentWindow();
-        w.setBackgroundColor({
-          r: 15,
-          g: 15,
-          b: 20,
-          a: opacity,
-        }).catch(() => {});
+        w.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0 }).catch(() => {});
       });
     } catch {
       // not in Tauri
     }
-  }, [opacity]);
+  }, []);
 
   const handleListen = useCallback(() => {
     const SpeechRecognition =
@@ -190,9 +185,9 @@ export const DashboardWindow: React.FC = () => {
   }, []);
 
   return (
-    <div className="dashboard-bar-wrap">
-      <div className="dashboard-bar">
-        <div className="dashboard-bar-drag" data-tauri-drag-region title="Drag to move">
+    <div className="dashboard-bar-wrap" style={{ ["--pill-opacity" as string]: opacity }}>
+      <div className="dashboard-bar" data-tauri-drag-region title="Drag to move">
+        <div className="dashboard-bar-drag">
           <span className="dashboard-bar-logo">Fupo</span>
         </div>
         <Sep />

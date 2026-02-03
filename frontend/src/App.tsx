@@ -84,13 +84,16 @@ const App: React.FC = () => {
         } else {
           const w = new WebviewWindow("dashboard", {
             url,
-            width: 460,
-            height: 72,
+            width: 440,
+            height: 52,
             decorations: false,
             alwaysOnTop: true,
+            transparent: true,
+            resizable: false,
+            shadow: false,
           });
           w.once("tauri://created", () => {
-            void w.show();
+            void w.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0 }).then(() => w.show());
           });
           w.once("tauri://error", () => {
             // Window creation failed (e.g. permission denied)
