@@ -191,81 +191,83 @@ export const DashboardWindow: React.FC = () => {
 
   return (
     <div className="dashboard-bar-wrap">
-    <div className="dashboard-bar">
-      <div className="dashboard-bar-drag" data-tauri-drag-region title="Drag to move">
-        <span className="dashboard-bar-logo">Fupo</span>
+      <div className="dashboard-bar">
+        <div className="dashboard-bar-drag" data-tauri-drag-region title="Drag to move">
+          <span className="dashboard-bar-logo">Fupo</span>
+        </div>
+        <Sep />
+        <div className="dashboard-bar-actions">
+          <button
+            type="button"
+            className={`dashboard-bar-btn ${listening ? "active listening" : ""}`}
+            onClick={handleListen}
+            disabled={listening}
+            title="Listen"
+            aria-label="Listen"
+          >
+            <span className="dashboard-bar-icon">{Icons.mic}</span>
+          </button>
+          <button
+            type="button"
+            className={`dashboard-bar-btn ${duckingEnabled ? "active" : ""}`}
+            onClick={handleToggleDucking}
+            disabled={duckingAvailable === false}
+            title={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
+            aria-label={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
+          >
+            <span className="dashboard-bar-icon">{Icons.speaker}</span>
+          </button>
+          <button
+            type="button"
+            className={`dashboard-bar-btn ${spotifyDuckingEnabled ? "active" : ""}`}
+            onClick={handleToggleSpotifyDucking}
+            disabled={spotifyDuckingAvailable === false}
+            title={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
+            aria-label={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
+          >
+            <span className="dashboard-bar-icon">{Icons.music}</span>
+          </button>
+        </div>
+        <Sep />
+        <div className="dashboard-bar-status" title={status}>
+          <span className="dashboard-bar-status-text">{status}</span>
+        </div>
+        <Sep />
+        <div className="dashboard-bar-opacity">
+          <input
+            type="range"
+            className="dashboard-bar-opacity-slider"
+            min={0.2}
+            max={1}
+            step={0.05}
+            value={opacity}
+            onChange={(e) => setOpacityState(parseFloat(e.target.value))}
+            title={`Opacity ${Math.round(opacity * 100)}%`}
+            aria-label="Window opacity"
+          />
+        </div>
+        <Sep />
+        <div className="dashboard-bar-window-actions">
+          <button
+            type="button"
+            className="dashboard-bar-btn dashboard-bar-btn-ghost"
+            onClick={handleMinimize}
+            title="Minimize"
+            aria-label="Minimize"
+          >
+            <span className="dashboard-bar-icon">{Icons.minus}</span>
+          </button>
+          <button
+            type="button"
+            className="dashboard-bar-btn dashboard-bar-btn-close"
+            onClick={handleClose}
+            title="Close"
+            aria-label="Close"
+          >
+            <span className="dashboard-bar-icon">{Icons.close}</span>
+          </button>
+        </div>
       </div>
-      <Sep />
-      <button
-        type="button"
-        className={`dashboard-bar-btn ${listening ? "active" : ""}`}
-        onClick={handleListen}
-        disabled={listening}
-        title="Listen"
-        aria-label="Listen"
-      >
-        <span className="dashboard-bar-icon">{Icons.mic}</span>
-      </button>
-      <Sep />
-      <button
-        type="button"
-        className={`dashboard-bar-btn ${duckingEnabled ? "active" : ""}`}
-        onClick={handleToggleDucking}
-        disabled={duckingAvailable === false}
-        title={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
-        aria-label={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
-      >
-        <span className="dashboard-bar-icon">{Icons.speaker}</span>
-      </button>
-      <Sep />
-      <button
-        type="button"
-        className={`dashboard-bar-btn ${spotifyDuckingEnabled ? "active" : ""}`}
-        onClick={handleToggleSpotifyDucking}
-        disabled={spotifyDuckingAvailable === false}
-        title={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
-        aria-label={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
-      >
-        <span className="dashboard-bar-icon">{Icons.music}</span>
-      </button>
-      <Sep />
-      <div className="dashboard-bar-status" title={status}>
-        <span className="dashboard-bar-status-text">{status}</span>
-      </div>
-      <Sep />
-      <div className="dashboard-bar-opacity">
-        <input
-          type="range"
-          className="dashboard-bar-opacity-slider"
-          min={0.2}
-          max={1}
-          step={0.05}
-          value={opacity}
-          onChange={(e) => setOpacityState(parseFloat(e.target.value))}
-          title={`Opacity ${Math.round(opacity * 100)}%`}
-          aria-label="Window opacity"
-        />
-      </div>
-      <Sep />
-      <button
-        type="button"
-        className="dashboard-bar-btn"
-        onClick={handleMinimize}
-        title="Minimize"
-        aria-label="Minimize"
-      >
-        <span className="dashboard-bar-icon">{Icons.minus}</span>
-      </button>
-      <button
-        type="button"
-        className="dashboard-bar-btn"
-        onClick={handleClose}
-        title="Close"
-        aria-label="Close"
-      >
-        <span className="dashboard-bar-icon">{Icons.close}</span>
-      </button>
-    </div>
     </div>
   );
 };
