@@ -16,6 +16,7 @@ import {
   THEME_COLOR_LABELS,
 } from "./theme";
 import { ColorPicker } from "./ColorPicker";
+import { CustomTitleBar, useIsTauri } from "./CustomTitleBar";
 
 export type TabId = "home" | "weather" | "system" | "chat" | "tools" | "commands" | "help" | "settings";
 
@@ -58,6 +59,7 @@ function saveUiPrefs(activeTab: TabId, layoutMode: LayoutMode) {
 }
 
 const App: React.FC = () => {
+  const isTauri = useIsTauri();
   const [activeTab, setActiveTab] = useState<TabId>(() => loadUiPrefs().activeTab);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => loadUiPrefs().layoutMode);
   const [themeState, setThemeState] = useState<ThemeState>(() => loadThemeState());
@@ -136,8 +138,9 @@ const App: React.FC = () => {
   if (layoutMode === "top") {
     return (
       <div className="app-root top-layout">
-        <header className="topbar">
-          <div className="logo">Fupo</div>
+        {isTauri && <CustomTitleBar />}
+        <header className={`topbar ${isTauri ? "topbar-below-title-bar" : ""}`}>
+          {!isTauri && <div className="logo">Fupo</div>}
           <nav className="nav nav-top">
             {tabs.map((t) => (
               <button
@@ -158,24 +161,27 @@ const App: React.FC = () => {
 
   // default: sidebar layout
   return (
-    <div className="app-root">
-      <aside className="sidebar">
-        <div className="logo">Fupo</div>
-        <nav className="nav">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              className={`nav-item ${activeTab === t.id ? "active" : ""}`}
-              onClick={() => setActiveTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-      </aside>
-      <div className="main-and-footer">
-        <main className="content">{renderContent()}</main>
-        <footer className="app-footer">Developed by: BMOandShiro v1.0.0</footer>
+    <div className={`app-root ${isTauri ? "app-root-with-title-bar" : ""}`}>
+      {isTauri && <CustomTitleBar />}
+      <div className={isTauri ? "app-body-with-sidebar" : "app-body-with-sidebar-inline"}>
+        <aside className={`sidebar ${isTauri ? "with-custom-title-bar" : ""}`}>
+          {!isTauri && <div className="logo">Fupo</div>}
+          <nav className="nav">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                className={`nav-item ${activeTab === t.id ? "active" : ""}`}
+                onClick={() => setActiveTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
+        <div className="main-and-footer">
+          <main className="content">{renderContent()}</main>
+          <footer className="app-footer">Developed by: BMOandShiro v1.0.0</footer>
+        </div>
       </div>
     </div>
   );

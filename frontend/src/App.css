@@ -41,8 +41,16 @@
   --transition-normal: 0.25s var(--ease-out);
 }
 
+html,
 body {
   margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
 }
 
 /* Dashboard window: cutoffs 100% transparent (rgba(0,0,0,0)), no scrollbars, no outline */
@@ -85,6 +93,21 @@ body.dashboard-window,
   height: 100vh;
   background: var(--theme-bg-app);
   color: var(--theme-text-primary);
+}
+
+.app-root.app-root-with-title-bar {
+  flex-direction: column;
+}
+
+.app-body-with-sidebar,
+.app-body-with-sidebar-inline {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.app-root.app-root-with-title-bar .app-body-with-sidebar {
+  min-height: 0;
 }
 
 .sidebar {
@@ -142,6 +165,7 @@ body.dashboard-window,
   padding: 16px 20px;
   overflow: auto;
   min-height: 0;
+  min-width: 0;
   scrollbar-color: var(--theme-scrollbar-thumb) var(--theme-scrollbar-track);
   scrollbar-width: thin;
 }
@@ -183,6 +207,12 @@ body.dashboard-window,
 
 .top-layout {
   flex-direction: column;
+  min-height: 0;
+}
+
+.top-layout .content {
+  flex: 1;
+  min-height: 0;
 }
 
 .topbar {
@@ -192,10 +222,122 @@ body.dashboard-window,
   padding: 12px 20px;
   border-bottom: 1px solid var(--theme-border);
   background: var(--theme-bg-sidebar);
+  flex-shrink: 0;
+}
+
+.topbar.topbar-below-title-bar {
+  padding-top: 14px;
+  padding-bottom: 12px;
 }
 
 .topbar .logo {
   margin-bottom: 0;
+}
+
+/* Custom title bar (Tauri, no native decorations) */
+.custom-title-bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  flex-shrink: 0;
+  padding: 0 0 0 12px;
+  background: var(--theme-bg-sidebar);
+  border-bottom: 1px solid var(--theme-border);
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.custom-title-bar-drag {
+  display: flex;
+  align-items: center;
+  min-width: 80px;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.custom-title-bar-logo {
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--theme-accent), var(--theme-accent-end));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.custom-title-bar-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 12px;
+}
+
+.custom-title-bar-center .nav-top {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.custom-title-bar-spacer {
+  flex: 1;
+  min-width: 0;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.custom-title-bar-controls {
+  display: flex;
+  align-items: stretch;
+  padding-right: 12px;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+.custom-title-bar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 100%;
+  min-height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--theme-text-muted);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.custom-title-bar-btn:hover {
+  background: var(--theme-nav-hover);
+  color: var(--theme-text-primary);
+}
+
+.custom-title-bar-btn-close:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+.custom-title-bar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.custom-title-bar-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Sidebar when custom title bar is shown: no duplicate logo */
+.sidebar.with-custom-title-bar {
+  padding-top: 12px;
+}
+
+.sidebar.with-custom-title-bar .logo {
+  display: none;
 }
 
 .nav-top {
