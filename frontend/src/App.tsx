@@ -1073,7 +1073,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
       const raw = localStorage.getItem("fupo_dashboard_scale");
       if (raw == null) return 1;
       const n = parseFloat(raw);
-      return Number.isFinite(n) && n >= 0.5 && n <= 1.5 ? n : 1;
+      return Number.isFinite(n) && n >= 0.5 && n <= 1 ? n : 1;
     } catch {
       return 1;
     }
@@ -1306,7 +1306,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
               type="range"
               className="settings-range"
               min={0.5}
-              max={1.5}
+              max={1}
               step={0.05}
               value={dashboardScale}
               onChange={(e) => {

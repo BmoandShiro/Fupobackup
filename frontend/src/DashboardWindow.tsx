@@ -21,7 +21,7 @@ function loadScale(): number {
     const raw = localStorage.getItem(DASHBOARD_SCALE_KEY);
     if (raw == null) return 1;
     const n = parseFloat(raw);
-    return Number.isFinite(n) && n >= 0.5 && n <= 1.5 ? n : 1;
+    return Number.isFinite(n) && n >= 0.5 && n <= 1 ? n : 1;
   } catch {
     return 1;
   }
@@ -109,7 +109,7 @@ export const DashboardWindow: React.FC = () => {
       }
       if (e.key === DASHBOARD_SCALE_KEY && e.newValue != null) {
         const n = parseFloat(e.newValue);
-        if (Number.isFinite(n) && n >= 0.5 && n <= 1.5) setScaleState(n);
+        if (Number.isFinite(n) && n >= 0.5 && n <= 1) setScaleState(n);
       }
       if (e.key === "fupo_theme" || e.key === "fupo_theme_presets") {
         const themeState = loadThemeState();
@@ -254,8 +254,12 @@ export const DashboardWindow: React.FC = () => {
       .then(({ getCurrentWindow, LogicalSize }) => {
         if (cancelled) return;
         const w = getCurrentWindow();
-        const ww = Math.round(560 * scale);
-        const hh = Math.round((statusExpanded ? 132 : 52) * scale);
+        const PILL_WIDTH = 560;
+        const PILL_HEIGHT_COLLAPSED = 52;
+        const PILL_HEIGHT_EXPANDED = 132;
+        const WRAP_PADDING_H = 28;
+        const ww = Math.round(PILL_WIDTH * scale) + WRAP_PADDING_H;
+        const hh = Math.round((statusExpanded ? PILL_HEIGHT_EXPANDED : PILL_HEIGHT_COLLAPSED) * scale);
         return w.setSize(new LogicalSize(ww, hh));
       })
       .catch(() => {});
