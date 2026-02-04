@@ -82,10 +82,18 @@ const App: React.FC = () => {
           await existing.show();
           await existing.setFocus();
         } else {
+          const DASHBOARD_PILL_WIDTH = 560;
+          const DASHBOARD_PILL_HEIGHT = 52;
+          const DASHBOARD_PADDING_H = 28;
+          const DASHBOARD_EXPANDED_HEIGHT = 132;
           const w = new WebviewWindow("dashboard", {
             url,
-            width: 560,
-            height: 52,
+            width: DASHBOARD_PILL_WIDTH + DASHBOARD_PADDING_H,
+            height: DASHBOARD_PILL_HEIGHT,
+            minWidth: DASHBOARD_PILL_WIDTH + DASHBOARD_PADDING_H,
+            minHeight: DASHBOARD_PILL_HEIGHT,
+            maxWidth: DASHBOARD_PILL_WIDTH + DASHBOARD_PADDING_H + 100,
+            maxHeight: DASHBOARD_EXPANDED_HEIGHT + 50,
             decorations: false,
             alwaysOnTop: true,
             transparent: true,

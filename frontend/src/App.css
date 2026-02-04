@@ -1111,6 +1111,10 @@ body.dashboard-window,
   -webkit-app-region: no-drag;
   app-region: no-drag;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 .dashboard-bar-status-expanded-text {
   font-size: 0.8rem;
@@ -1121,6 +1125,7 @@ body.dashboard-window,
   word-break: break-word;
   display: block;
   line-height: 1.45;
+  width: 100%;
 }
 .dashboard-bar-status-toggle {
   display: flex;

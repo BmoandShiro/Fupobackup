@@ -244,29 +244,42 @@ export const DashboardWindow: React.FC = () => {
     }
   }, []);
 
+  const PILL_WIDTH = 560;
+  const PILL_HEIGHT_COLLAPSED = 52;
+  const PILL_HEIGHT_EXPANDED = 132;
+  const WRAP_PADDING_H = 28;
+
+  const resizeWindow = useCallback(
+    (expanded: boolean) => {
+      const ww = Math.round(PILL_WIDTH * scale) + WRAP_PADDING_H;
+      const hh = Math.round((expanded ? PILL_HEIGHT_EXPANDED : PILL_HEIGHT_COLLAPSED) * scale);
+      return Promise.all([
+        import("@tauri-apps/api/webviewWindow"),
+        import("@tauri-apps/api/window"),
+      ]).then(([{ getCurrentWebviewWindow }, { LogicalSize }]) =>
+        getCurrentWebviewWindow().setSize(new LogicalSize(ww, hh))
+      );
+    },
+    [scale]
+  );
+
   const toggleStatusExpanded = useCallback(() => {
-    setStatusExpanded((prev) => !prev);
-  }, []);
+    const next = !statusExpanded;
+    resizeWindow(next)
+      .then(() => setStatusExpanded(next))
+      .catch(() => setStatusExpanded(next));
+  }, [statusExpanded, resizeWindow]);
 
   useEffect(() => {
-    let cancelled = false;
-    import("@tauri-apps/api/window")
-      .then(({ getCurrentWindow, LogicalSize }) => {
-        if (cancelled) return;
-        const w = getCurrentWindow();
-        const PILL_WIDTH = 560;
-        const PILL_HEIGHT_COLLAPSED = 52;
-        const PILL_HEIGHT_EXPANDED = 132;
-        const WRAP_PADDING_H = 28;
-        const ww = Math.round(PILL_WIDTH * scale) + WRAP_PADDING_H;
-        const hh = Math.round((statusExpanded ? PILL_HEIGHT_EXPANDED : PILL_HEIGHT_COLLAPSED) * scale);
-        return w.setSize(new LogicalSize(ww, hh));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [scale, statusExpanded]);
+    resizeWindow(statusExpanded).catch(() => {});
+  }, [scale, statusExpanded, resizeWindow]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      resizeWindow(false).catch(() => {});
+    }, 100);
+    return () => clearTimeout(t);
+  }, [resizeWindow]);
 
   return (
     <div className="dashboard-bar-wrap" style={{ ["--pill-opacity" as string]: opacity }}>
