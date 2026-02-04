@@ -196,6 +196,7 @@ export function applyTheme(colors: ThemeColors): void {
     const value = colors[key];
     if (value) root.style.setProperty(`--theme-${toCssVarName(key)}`, value);
   });
+  if (colors.bgPanel) root.style.setProperty("--theme-dashboard-pill", colors.bgPanel);
 }
 
 /** Convert theme value (hex or rgba) to #RRGGBB for use in type="color" input. */

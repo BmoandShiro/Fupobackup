@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { api } from "./utils/api";
+import { loadThemeState, getEffectiveColors, applyTheme } from "./theme";
 
 const DASHBOARD_OPACITY_KEY = "fupo_dashboard_opacity";
+const DASHBOARD_SCALE_KEY = "fupo_dashboard_scale";
 
 function loadOpacity(): number {
   try {
@@ -14,11 +16,14 @@ function loadOpacity(): number {
   }
 }
 
-function saveOpacity(value: number) {
+function loadScale(): number {
   try {
-    localStorage.setItem(DASHBOARD_OPACITY_KEY, String(value));
+    const raw = localStorage.getItem(DASHBOARD_SCALE_KEY);
+    if (raw == null) return 1;
+    const n = parseFloat(raw);
+    return Number.isFinite(n) && n >= 0.5 && n <= 1.5 ? n : 1;
   } catch {
-    // ignore
+    return 1;
   }
 }
 
@@ -88,7 +93,43 @@ export const DashboardWindow: React.FC = () => {
   const [spotifyDuckingEnabled, setSpotifyDuckingEnabled] = useState(false);
   const [spotifyDuckingAvailable, setSpotifyDuckingAvailable] = useState<boolean | null>(null);
   const [opacity, setOpacityState] = useState(loadOpacity);
+  const [scale, setScaleState] = useState(loadScale);
   const [statusExpanded, setStatusExpanded] = useState(false);
+
+  useEffect(() => {
+    const themeState = loadThemeState();
+    applyTheme(getEffectiveColors(themeState));
+  }, []);
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === DASHBOARD_OPACITY_KEY && e.newValue != null) {
+        const n = parseFloat(e.newValue);
+        if (Number.isFinite(n) && n >= 0 && n <= 1) setOpacityState(n);
+      }
+      if (e.key === DASHBOARD_SCALE_KEY && e.newValue != null) {
+        const n = parseFloat(e.newValue);
+        if (Number.isFinite(n) && n >= 0.5 && n <= 1.5) setScaleState(n);
+      }
+      if (e.key === "fupo_theme" || e.key === "fupo_theme_presets") {
+        const themeState = loadThemeState();
+        applyTheme(getEffectiveColors(themeState));
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  useEffect(() => {
+    try {
+      void import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
+        const w = getCurrentWindow();
+        w.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0 }).catch(() => {});
+      });
+    } catch {
+      // not in Tauri
+    }
+  }, []);
 
   useEffect(() => {
     api
@@ -103,18 +144,6 @@ export const DashboardWindow: React.FC = () => {
         setDuckingAvailable(false);
         setSpotifyDuckingAvailable(false);
       });
-  }, []);
-
-  useEffect(() => {
-    saveOpacity(opacity);
-    try {
-      void import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
-        const w = getCurrentWindow();
-        w.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0 }).catch(() => {});
-      });
-    } catch {
-      // not in Tauri
-    }
   }, []);
 
   const handleListen = useCallback(() => {
@@ -216,92 +245,93 @@ export const DashboardWindow: React.FC = () => {
   }, []);
 
   const toggleStatusExpanded = useCallback(() => {
-    const next = !statusExpanded;
+    setStatusExpanded((prev) => !prev);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     import("@tauri-apps/api/window")
       .then(({ getCurrentWindow, LogicalSize }) => {
+        if (cancelled) return;
         const w = getCurrentWindow();
-        const size = next ? new LogicalSize(560, 132) : new LogicalSize(560, 52);
-        return w.setSize(size);
+        const ww = Math.round(560 * scale);
+        const hh = Math.round((statusExpanded ? 132 : 52) * scale);
+        return w.setSize(new LogicalSize(ww, hh));
       })
-      .then(() => setStatusExpanded(next))
-      .catch(() => setStatusExpanded(next));
-  }, [statusExpanded]);
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [scale, statusExpanded]);
 
   return (
     <div className="dashboard-bar-wrap" style={{ ["--pill-opacity" as string]: opacity }}>
-      <div className={`dashboard-bar-layout ${statusExpanded ? "status-expanded" : ""}`}>
-        <div className="dashboard-bar" data-tauri-drag-region title="Drag to move">
-          <div className="dashboard-bar-drag">
-            <span className="dashboard-bar-logo">Fupo</span>
-          </div>
-          <Sep />
-          <div className="dashboard-bar-actions">
-            <button
-              type="button"
-              className={`dashboard-bar-btn ${listening ? "active listening" : ""}`}
-              onClick={handleListen}
-              disabled={listening}
-              title="Listen"
-              aria-label="Listen"
-            >
-              <span className="dashboard-bar-icon">{Icons.mic}</span>
-            </button>
-            <button
-              type="button"
-              className={`dashboard-bar-btn ${duckingEnabled ? "active" : ""}`}
-              onClick={handleToggleDucking}
-              disabled={duckingAvailable === false}
-              title={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
-              aria-label={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
-            >
-              <span className="dashboard-bar-icon">{Icons.speaker}</span>
-            </button>
-            <button
-              type="button"
-              className={`dashboard-bar-btn ${spotifyDuckingEnabled ? "active" : ""}`}
-              onClick={handleToggleSpotifyDucking}
-              disabled={spotifyDuckingAvailable === false}
-              title={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
-              aria-label={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
-            >
-              <span className="dashboard-bar-icon">{Icons.music}</span>
-            </button>
-          </div>
-          <Sep />
-          <div className="dashboard-bar-status" title={status}>
-            <span className="dashboard-bar-status-text">{status}</span>
-            <button
-              type="button"
-              className="dashboard-bar-status-toggle"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleStatusExpanded();
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              title={statusExpanded ? "Collapse status" : "Expand status (full width)"}
-              aria-label={statusExpanded ? "Collapse status" : "Expand status"}
-              aria-expanded={statusExpanded}
-            >
-              <span className="dashboard-bar-icon">{statusExpanded ? Icons.chevronUp : Icons.chevronDown}</span>
-            </button>
-          </div>
-          <Sep />
-        <div className="dashboard-bar-opacity">
-          <input
-            type="range"
-            className="dashboard-bar-opacity-slider"
-            min={0.2}
-            max={1}
-            step={0.05}
-            value={opacity}
-            onChange={(e) => setOpacityState(parseFloat(e.target.value))}
-            title={`Opacity ${Math.round(opacity * 100)}%`}
-            aria-label="Window opacity"
-          />
-        </div>
-        <Sep />
-        <div className="dashboard-bar-window-actions">
+      <div
+        className="dashboard-bar-scaled"
+        style={{
+          transform: `scale(${scale})`,
+          transformOrigin: "left center",
+        }}
+      >
+        <div className={`dashboard-bar-layout ${statusExpanded ? "status-expanded" : ""}`}>
+          <div className="dashboard-bar" data-tauri-drag-region title="Drag to move">
+            <div className="dashboard-bar-drag">
+              <span className="dashboard-bar-logo">Fupo</span>
+            </div>
+            <Sep />
+            <div className="dashboard-bar-actions">
+              <button
+                type="button"
+                className={`dashboard-bar-btn ${listening ? "active listening" : ""}`}
+                onClick={handleListen}
+                disabled={listening}
+                title="Listen"
+                aria-label="Listen"
+              >
+                <span className="dashboard-bar-icon">{Icons.mic}</span>
+              </button>
+              <button
+                type="button"
+                className={`dashboard-bar-btn ${duckingEnabled ? "active" : ""}`}
+                onClick={handleToggleDucking}
+                disabled={duckingAvailable === false}
+                title={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
+                aria-label={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
+              >
+                <span className="dashboard-bar-icon">{Icons.speaker}</span>
+              </button>
+              <button
+                type="button"
+                className={`dashboard-bar-btn ${spotifyDuckingEnabled ? "active" : ""}`}
+                onClick={handleToggleSpotifyDucking}
+                disabled={spotifyDuckingAvailable === false}
+                title={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
+                aria-label={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
+              >
+                <span className="dashboard-bar-icon">{Icons.music}</span>
+              </button>
+            </div>
+            <Sep />
+            <div className="dashboard-bar-status" title={status}>
+              <span className="dashboard-bar-status-text">{status}</span>
+              <button
+                type="button"
+                className="dashboard-bar-status-toggle"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleStatusExpanded();
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                title={statusExpanded ? "Collapse status" : "Expand status (full width)"}
+                aria-label={statusExpanded ? "Collapse status" : "Expand status"}
+                aria-expanded={statusExpanded}
+              >
+                <span className="dashboard-bar-icon">{statusExpanded ? Icons.chevronUp : Icons.chevronDown}</span>
+              </button>
+            </div>
+            <Sep />
+            <div className="dashboard-bar-window-actions">
           <button
             type="button"
             className="dashboard-bar-btn dashboard-bar-btn-ghost"
@@ -332,6 +362,7 @@ export const DashboardWindow: React.FC = () => {
             <span className="dashboard-bar-status-expanded-text">{status}</span>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

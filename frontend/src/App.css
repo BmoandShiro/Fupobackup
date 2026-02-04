@@ -1068,6 +1068,17 @@ body.dashboard-window,
   overflow: hidden;
 }
 
+.dashboard-bar-scaled {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
 .dashboard-bar-layout {
   display: flex;
   flex-direction: column;
@@ -1091,10 +1102,10 @@ body.dashboard-window,
   max-height: 80px;
   width: 100%;
   padding: 10px 14px 12px;
-  background: rgba(18, 18, 22, calc(0.92 * var(--pill-opacity, 1)));
+  background: color-mix(in srgb, var(--theme-dashboard-pill, rgba(18, 18, 22, 0.92)) calc(92% * var(--pill-opacity, 1)), transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(168, 85, 247, 0.2);
+  border-top: 1px solid color-mix(in srgb, var(--theme-accent) 25%, transparent);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   overflow-y: auto;
   -webkit-app-region: no-drag;
@@ -1132,8 +1143,8 @@ body.dashboard-window,
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 .dashboard-bar-status-toggle:hover {
-  background: rgba(168, 85, 247, 0.2);
-  color: #c084fc;
+  background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+  color: var(--theme-text-heading);
 }
 .dashboard-bar-status-toggle .dashboard-bar-icon {
   width: 16px;
@@ -1144,7 +1155,7 @@ body.dashboard-window,
   height: 100%;
 }
 
-/* --pill-opacity only affects the pill fill; no box-shadow so cutoffs stay 100% transparent */
+/* --pill-opacity only affects the pill fill; --theme-dashboard-pill set by theme */
 .dashboard-bar {
   display: flex;
   align-items: center;
@@ -1153,7 +1164,7 @@ body.dashboard-window,
   height: 100%;
   min-height: 52px;
   padding: 0 4px 0 10px;
-  background: rgba(18, 18, 22, calc(0.92 * var(--pill-opacity, 1)));
+  background: color-mix(in srgb, var(--theme-dashboard-pill, rgba(18, 18, 22, 0.92)) calc(92% * var(--pill-opacity, 1)), transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: none;
@@ -1196,7 +1207,7 @@ body.dashboard-window,
   width: 1px;
   height: 24px;
   margin: 0 6px;
-  background: rgba(168, 85, 247, 0.35);
+  background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
   border-radius: var(--radius-pill);
   flex-shrink: 0;
 }
@@ -1226,24 +1237,24 @@ body.dashboard-window,
   transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 .dashboard-bar-btn:hover:not(:disabled) {
-  background: rgba(168, 85, 247, 0.18);
-  color: #c084fc;
+  background: color-mix(in srgb, var(--theme-accent) 18%, transparent);
+  color: var(--theme-text-heading);
   transform: scale(1.05);
 }
 .dashboard-bar-btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 .dashboard-bar-btn.active {
-  background: rgba(168, 85, 247, 0.28);
-  color: #e9d5ff;
-  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.3);
+  background: color-mix(in srgb, var(--theme-accent) 28%, transparent);
+  color: var(--theme-text-heading);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent) 30%, transparent);
 }
 .dashboard-bar-btn.active.listening {
   animation: dashboard-pulse 1.5s ease-in-out infinite;
 }
 @keyframes dashboard-pulse {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.3); }
-  50% { box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4), 0 0 12px rgba(168, 85, 247, 0.25); }
+  0%, 100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent) 30%, transparent); }
+  50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 40%, transparent), 0 0 12px color-mix(in srgb, var(--theme-accent) 25%, transparent); }
 }
 .dashboard-bar-btn:disabled {
   opacity: 0.4;
@@ -1314,7 +1325,7 @@ body.dashboard-window,
   app-region: no-drag;
   -webkit-appearance: none;
   appearance: none;
-  background: rgba(168, 85, 247, 0.2);
+  background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
 }
 .dashboard-bar-opacity-slider::-webkit-slider-thumb {
   -webkit-appearance: none;

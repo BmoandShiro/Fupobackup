@@ -1058,6 +1058,26 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<string>("");
   const [themeCustomOpen, setThemeCustomOpen] = useState(false);
+  const [dashboardOpacity, setDashboardOpacity] = useState(() => {
+    try {
+      const raw = localStorage.getItem("fupo_dashboard_opacity");
+      if (raw == null) return 1;
+      const n = parseFloat(raw);
+      return Number.isFinite(n) && n >= 0.2 && n <= 1 ? n : 1;
+    } catch {
+      return 1;
+    }
+  });
+  const [dashboardScale, setDashboardScale] = useState(() => {
+    try {
+      const raw = localStorage.getItem("fupo_dashboard_scale");
+      if (raw == null) return 1;
+      const n = parseFloat(raw);
+      return Number.isFinite(n) && n >= 0.5 && n <= 1.5 ? n : 1;
+    } catch {
+      return 1;
+    }
+  });
   const [openPickerKey, setOpenPickerKey] = useState<ThemeColorKey | null>(null);
   const [pickerAnchor, setPickerAnchor] = useState<{ right: number; top: number; height: number } | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ left: number; top: number } | null>(null);
@@ -1253,6 +1273,56 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
             </button>
           </div>
         </div>
+
+        <h3 className="settings-heading">Dashboard (floating bar)</h3>
+        <div className="settings-row">
+          <label className="settings-label">Bar opacity</label>
+          <div className="settings-slider-row">
+            <input
+              type="range"
+              className="settings-range"
+              min={0.2}
+              max={1}
+              step={0.05}
+              value={dashboardOpacity}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                setDashboardOpacity(v);
+                try {
+                  localStorage.setItem("fupo_dashboard_opacity", String(v));
+                } catch {
+                  // ignore
+                }
+              }}
+            />
+            <span className="settings-range-value">{Math.round(dashboardOpacity * 100)}%</span>
+          </div>
+        </div>
+        <p className="muted settings-hint">Opacity of the floating dashboard bar. If the dashboard window is open, it updates automatically.</p>
+        <div className="settings-row">
+          <label className="settings-label">Bar scale</label>
+          <div className="settings-slider-row">
+            <input
+              type="range"
+              className="settings-range"
+              min={0.5}
+              max={1.5}
+              step={0.05}
+              value={dashboardScale}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                setDashboardScale(v);
+                try {
+                  localStorage.setItem("fupo_dashboard_scale", String(v));
+                } catch {
+                  // ignore
+                }
+              }}
+            />
+            <span className="settings-range-value">{Math.round(dashboardScale * 100)}%</span>
+          </div>
+        </div>
+        <p className="muted settings-hint">Size of the dashboard bar. If the dashboard window is open, it updates automatically.</p>
 
         <h3 className="settings-heading">Theme</h3>
         <div className="settings-row">
