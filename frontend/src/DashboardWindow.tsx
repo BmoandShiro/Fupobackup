@@ -50,6 +50,16 @@ const Icons = {
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   ),
+  chevronDown: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  ),
+  chevronUp: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="18 15 12 9 6 15" />
+    </svg>
+  ),
   close: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="6" x2="6" y2="18" />
@@ -70,6 +80,7 @@ export const DashboardWindow: React.FC = () => {
   const [spotifyDuckingEnabled, setSpotifyDuckingEnabled] = useState(false);
   const [spotifyDuckingAvailable, setSpotifyDuckingAvailable] = useState<boolean | null>(null);
   const [opacity, setOpacityState] = useState(loadOpacity);
+  const [statusExpanded, setStatusExpanded] = useState(false);
 
   useEffect(() => {
     api
@@ -184,50 +195,82 @@ export const DashboardWindow: React.FC = () => {
     }
   }, []);
 
+  const toggleStatusExpanded = useCallback(() => {
+    setStatusExpanded((prev) => {
+      const next = !prev;
+      try {
+        void import("@tauri-apps/api/window").then(({ getCurrentWindow, LogicalSize }) => {
+          const w = getCurrentWindow();
+          const size = next ? new LogicalSize(560, 132) : new LogicalSize(560, 52);
+          w.setSize(size).catch(() => {});
+        });
+      } catch {
+        // not in Tauri
+      }
+      return next;
+    });
+  }, []);
+
   return (
     <div className="dashboard-bar-wrap" style={{ ["--pill-opacity" as string]: opacity }}>
-      <div className="dashboard-bar" data-tauri-drag-region title="Drag to move">
-        <div className="dashboard-bar-drag">
-          <span className="dashboard-bar-logo">Fupo</span>
-        </div>
-        <Sep />
-        <div className="dashboard-bar-actions">
-          <button
-            type="button"
-            className={`dashboard-bar-btn ${listening ? "active listening" : ""}`}
-            onClick={handleListen}
-            disabled={listening}
-            title="Listen"
-            aria-label="Listen"
-          >
-            <span className="dashboard-bar-icon">{Icons.mic}</span>
-          </button>
-          <button
-            type="button"
-            className={`dashboard-bar-btn ${duckingEnabled ? "active" : ""}`}
-            onClick={handleToggleDucking}
-            disabled={duckingAvailable === false}
-            title={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
-            aria-label={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
-          >
-            <span className="dashboard-bar-icon">{Icons.speaker}</span>
-          </button>
-          <button
-            type="button"
-            className={`dashboard-bar-btn ${spotifyDuckingEnabled ? "active" : ""}`}
-            onClick={handleToggleSpotifyDucking}
-            disabled={spotifyDuckingAvailable === false}
-            title={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
-            aria-label={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
-          >
-            <span className="dashboard-bar-icon">{Icons.music}</span>
-          </button>
-        </div>
-        <Sep />
-        <div className="dashboard-bar-status" title={status}>
-          <span className="dashboard-bar-status-text">{status}</span>
-        </div>
-        <Sep />
+      <div className={`dashboard-bar-layout ${statusExpanded ? "status-expanded" : ""}`}>
+        <div className="dashboard-bar" data-tauri-drag-region title="Drag to move">
+          <div className="dashboard-bar-drag">
+            <span className="dashboard-bar-logo">Fupo</span>
+          </div>
+          <Sep />
+          <div className="dashboard-bar-actions">
+            <button
+              type="button"
+              className={`dashboard-bar-btn ${listening ? "active listening" : ""}`}
+              onClick={handleListen}
+              disabled={listening}
+              title="Listen"
+              aria-label="Listen"
+            >
+              <span className="dashboard-bar-icon">{Icons.mic}</span>
+            </button>
+            <button
+              type="button"
+              className={`dashboard-bar-btn ${duckingEnabled ? "active" : ""}`}
+              onClick={handleToggleDucking}
+              disabled={duckingAvailable === false}
+              title={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
+              aria-label={duckingEnabled ? "Disable Audio Ducking" : "Enable Audio Ducking"}
+            >
+              <span className="dashboard-bar-icon">{Icons.speaker}</span>
+            </button>
+            <button
+              type="button"
+              className={`dashboard-bar-btn ${spotifyDuckingEnabled ? "active" : ""}`}
+              onClick={handleToggleSpotifyDucking}
+              disabled={spotifyDuckingAvailable === false}
+              title={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
+              aria-label={spotifyDuckingEnabled ? "Disable Spotify Ducking" : "Enable Spotify Ducking"}
+            >
+              <span className="dashboard-bar-icon">{Icons.music}</span>
+            </button>
+          </div>
+          <Sep />
+          <div className="dashboard-bar-status" title={status}>
+            <span className="dashboard-bar-status-text">{status}</span>
+            <button
+              type="button"
+              className="dashboard-bar-status-toggle"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleStatusExpanded();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              title={statusExpanded ? "Collapse status" : "Expand status (full width)"}
+              aria-label={statusExpanded ? "Collapse status" : "Expand status"}
+              aria-expanded={statusExpanded}
+            >
+              <span className="dashboard-bar-icon">{statusExpanded ? Icons.chevronUp : Icons.chevronDown}</span>
+            </button>
+          </div>
+          <Sep />
         <div className="dashboard-bar-opacity">
           <input
             type="range"
@@ -262,6 +305,17 @@ export const DashboardWindow: React.FC = () => {
             <span className="dashboard-bar-icon">{Icons.close}</span>
           </button>
         </div>
+        </div>
+        {statusExpanded && (
+          <div
+            className="dashboard-bar-status-expanded"
+            onClick={(e) => e.stopPropagation()}
+            role="region"
+            aria-label="Status (expanded)"
+          >
+            <span className="dashboard-bar-status-expanded-text">{status}</span>
+          </div>
+        )}
       </div>
     </div>
   );

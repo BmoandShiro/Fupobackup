@@ -1055,7 +1055,7 @@ body.dashboard-window,
 
 /* Dashboard window – pill only, no extra area; window background is transparent */
 .dashboard-bar-wrap {
-  padding: 0;
+  padding: 0 14px;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -1063,8 +1063,83 @@ body.dashboard-window,
   box-sizing: border-box;
   background: transparent;
   display: flex;
+  flex-direction: column;
   align-items: stretch;
   overflow: hidden;
+}
+
+.dashboard-bar-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  min-height: 0;
+}
+.dashboard-bar-layout.status-expanded {
+  flex: 0 0 auto;
+}
+.dashboard-bar-layout .dashboard-bar {
+  flex: 0 0 52px;
+}
+.dashboard-bar-layout.status-expanded .dashboard-bar {
+  flex: 0 0 52px;
+}
+.dashboard-bar-status-expanded {
+  flex: 1;
+  min-height: 72px;
+  max-height: 80px;
+  width: 100%;
+  padding: 10px 14px 12px;
+  background: rgba(18, 18, 22, calc(0.92 * var(--pill-opacity, 1)));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  overflow-y: auto;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+  box-sizing: border-box;
+}
+.dashboard-bar-status-expanded-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--theme-text-muted);
+  opacity: 0.95;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: block;
+  line-height: 1.45;
+}
+.dashboard-bar-status-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin: 0 0 0 4px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--theme-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.dashboard-bar-status-toggle:hover {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+}
+.dashboard-bar-status-toggle .dashboard-bar-icon {
+  width: 16px;
+  height: 16px;
+}
+.dashboard-bar-status-toggle .dashboard-bar-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 /* --pill-opacity only affects the pill fill; no box-shadow so cutoffs stay 100% transparent */
@@ -1196,12 +1271,19 @@ body.dashboard-window,
 }
 
 .dashboard-bar-status {
-  min-width: 88px;
-  max-width: 180px;
-  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 220px;
+  padding: 0 8px 0 12px;
+  overflow: hidden;
+  flex: 1;
+}
+.dashboard-bar-status .dashboard-bar-status-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .dashboard-bar-status-text {

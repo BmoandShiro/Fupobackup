@@ -84,7 +84,7 @@ const App: React.FC = () => {
         } else {
           const w = new WebviewWindow("dashboard", {
             url,
-            width: 440,
+            width: 560,
             height: 52,
             decorations: false,
             alwaysOnTop: true,
