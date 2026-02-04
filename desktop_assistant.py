@@ -454,21 +454,26 @@ class DesktopAssistant(QWidget):
     def init_volume_control(self):
         """Initialize system volume control (optional, may fail on some setups)."""
         try:
-            devices = AudioUtilities.GetSpeakers()
-            # Some pycaw versions expose Activate on the interface, others require device.interface
-            interface = getattr(devices, "Activate", None)
-            if interface is None:
-                # Fallback: try default device interface if available
-                interface = devices._ctl.QueryInterface(IAudioEndpointVolume._iid_)
+            device = AudioUtilities.GetSpeakers()
+            # Prefer EndpointVolume (modern pycaw); fallback to Activate (no _ctl)
+            volume = getattr(device, "EndpointVolume", None)
+            if volume is not None:
+                self.volume = cast(volume, POINTER(IAudioEndpointVolume))
             else:
-                interface = interface(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-
-            self.volume = cast(interface, POINTER(IAudioEndpointVolume))
-            self.original_volume_level = self.volume.GetMasterVolumeLevelScalar()
-            logger.info("Volume control initialized successfully.")
+                interface = getattr(device, "Activate", None)
+                if interface is not None:
+                    iface = interface(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                    self.volume = cast(iface, POINTER(IAudioEndpointVolume))
+                else:
+                    self.volume = None
+            if self.volume is not None:
+                self.original_volume_level = self.volume.GetMasterVolumeLevelScalar()
+                logger.info("Volume control initialized successfully.")
+            else:
+                self.volume = None
+                self.original_volume_level = 0.5
         except Exception as e:
             logger.error(f"Failed to initialize volume control / pycaw: {e}")
-            # Graceful degradation: disable audio ducking features
             self.volume = None
             self.original_volume_level = 0.5
 
@@ -697,6 +702,16 @@ class DesktopAssistant(QWidget):
             pre_filtered_intent = "add_to_playlist"
         elif "delete" in command_lower and "playlist" in command_lower:
             pre_filtered_intent = "delete_playlist"
+        elif "unmute" in command_lower:
+            pre_filtered_intent = "unmute"
+        elif "mute" in command_lower:
+            pre_filtered_intent = "mute"
+        elif "spotify volume up" in command_lower or "volume up" in command_lower:
+            pre_filtered_intent = "increase_volume"
+        elif "spotify volume down" in command_lower or "volume down" in command_lower:
+            pre_filtered_intent = "decrease_volume"
+        elif re.search(r"spotify\s+volume\s+\d+", command_lower) or re.search(r"set\s+spotify\s+volume\s+\d+", command_lower):
+            pre_filtered_intent = "set_volume"
         elif any(word in command_lower for word in ["set", "adjust"]) and "volume" in command_lower:
             pre_filtered_intent = "set_volume"
         elif "increase" in command_lower and "volume" in command_lower:
@@ -808,12 +823,18 @@ class DesktopAssistant(QWidget):
 
             logger.info(f"Parsed weather location: {location}, detailed: {detailed_weather}, forecast: {forecast}, alerts: {alerts}")
             try:
-                display_msg, spoken_msg = self.weather_api.get_weather(location, spoken_request=command, detailed=detailed_weather)
+                result = self.weather_api.get_weather(location, spoken_request=command, detailed=detailed_weather)
+                display_msg, spoken_msg = result[0], result[1]
                 if forecast or alerts:
                     lat, lon, loc = self.weather_api.get_coordinates(location) if location != "auto" else self.weather_api.get_current_location()
+                    if location != "auto" and lat is None and self.weather_api.get_coordinates_from_zip:
+                        zip5 = "".join(c for c in location if c.isdigit())[:5]
+                        if len(zip5) == 5:
+                            lat, lon, loc = self.weather_api.get_coordinates_from_zip(zip5)
                     if lat and lon:
                         if forecast:
-                            full_display, _ = self.weather_api.get_weather(location)
+                            full_result = self.weather_api.get_weather(location)
+                            full_display = full_result[0] if full_result else ""
                             forecast_lines = full_display.split("\n**5-Day Forecast:**\n")[-1].strip().split("\n")
                             forecast_data = []
                             for line in forecast_lines:
@@ -1074,35 +1095,49 @@ class DesktopAssistant(QWidget):
                     return delete_result, delete_result
             return "Playlist name not specified. Say 'delete playlist [name]'.", "Playlist name not specified."
 
+        elif intent == "mute":
+            if self.spotify_controller:
+                mute_result = self.spotify_controller.mute()
+                return mute_result, mute_result
+            return "Spotify not configured.", "Spotify not configured."
+
+        elif intent == "unmute":
+            if self.spotify_controller:
+                unmute_result = self.spotify_controller.unmute()
+                return unmute_result, unmute_result
+            return "Spotify not configured.", "Spotify not configured."
+
         elif intent == "set_volume":
-            match = re.search(r"set\s+spotify\s+volume\s+to\s+(\d+)%", command, re.IGNORECASE)
+            match = (
+                re.search(r"set\s+spotify\s+volume\s+(\d+)\s*%?\s*(?:percent)?", command, re.IGNORECASE)
+                or re.search(r"spotify\s+volume\s+(\d+)\s*%?\s*(?:percent)?", command, re.IGNORECASE)
+                or re.search(r"set\s+spotify\s+volume\s+to\s+(\d+)\s*%?\s*(?:percent)?", command, re.IGNORECASE)
+            )
             if match:
-                volume = int(match.group(1))
+                volume = min(100, max(0, int(match.group(1))))
                 if self.spotify_controller:
                     volume_result = self.spotify_controller.set_volume(volume)
                     logger.info(f"Set volume result: {volume_result}")
                     return volume_result, volume_result
-            return "Volume not specified. Say 'set Spotify volume to [number]%' (0-100).", "Volume not specified."
+            return "Volume not specified. Say 'Spotify volume [number]%' (0-100).", "Volume not specified."
 
         elif intent == "increase_volume":
             match = re.search(r"increase\s+spotify\s+volume(?:\s+by\s+(\d+)%?)?", command, re.IGNORECASE)
-            if match:
-                amount = int(match.group(1)) if match.group(1) else 10  # Default to 10% if no amount specified
-                if self.spotify_controller:
-                    volume_result = self.spotify_controller.increase_volume(amount)
-                    logger.info(f"Increase volume result: {volume_result}")
-                    return volume_result, volume_result
-            return "Say 'increase Spotify volume' or 'increase Spotify volume by [number]%' (default 10%).", "Say 'increase Spotify volume'."
+            amount = int(match.group(1)) if match and match.group(1) else 10
+            if self.spotify_controller:
+                volume_result = self.spotify_controller.increase_volume(amount)
+                logger.info(f"Increase volume result: {volume_result}")
+                return volume_result, volume_result
+            return "Say 'Spotify volume up' or 'increase Spotify volume by [number]%'.", "Say 'Spotify volume up'."
 
         elif intent == "decrease_volume":
             match = re.search(r"decrease\s+spotify\s+volume(?:\s+by\s+(\d+)%?)?", command, re.IGNORECASE)
-            if match:
-                amount = int(match.group(1)) if match.group(1) else 10  # Default to 10% if no amount specified
-                if self.spotify_controller:
-                    volume_result = self.spotify_controller.decrease_volume(amount)
-                    logger.info(f"Decrease volume result: {volume_result}")
-                    return volume_result, volume_result
-            return "Say 'decrease Spotify volume' or 'decrease Spotify volume by [number]%' (default 10%).", "Say 'decrease Spotify volume'."
+            amount = int(match.group(1)) if match and match.group(1) else 10
+            if self.spotify_controller:
+                volume_result = self.spotify_controller.decrease_volume(amount)
+                logger.info(f"Decrease volume result: {volume_result}")
+                return volume_result, volume_result
+            return "Say 'Spotify volume down' or 'decrease Spotify volume by [number]%'.", "Say 'Spotify volume down'."
 
         elif intent == "get_recommendations":
             match = re.search(r"(?:recommend|find)\s+(songs|artists)\s+like\s+(.+)|(?:recommend|find)\s+(\w+)\s+music", command, re.IGNORECASE)

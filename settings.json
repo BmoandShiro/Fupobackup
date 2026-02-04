@@ -1,3 +1,27 @@
 {
-    "theme": "High Contrast Dark"
+    "theme": "High Contrast Dark",
+    "spotify_client_id": "ea822adc29d84e83ae349312052ed883",
+    "spotify_client_secret": "48f3890441844108a248e7aa0386a004",
+    "spotify_redirect_uri": "http://localhost:8080",
+    "asana_token": "",
+    "openai_api_key": "",
+    "xai_api_key": "",
+    "ai_choice": "ChatGPT",
+    "nlp_choice": "Transformers",
+    "macro_key": "F24",
+    "macro_key_hold": false,
+    "reset_macro_key": "Ctrl+Alt+R",
+    "firefox_path": "",
+    "geckodriver_path": "",
+    "firefox_executable_path": "",
+    "screenshot_dir": "",
+    "training_mode": false,
+    "system_refresh_interval": 5000,
+    "monitor_weather_statements": false,
+    "weather_monitor_locations": [],
+    "weather_check_interval": 60,
+    "microphone_index": 0,
+    "audio_ducking_ratio": 5,
+    "spotify_ducking_ratio": 25,
+    "read_status_after_command": true
 }

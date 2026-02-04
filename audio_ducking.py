@@ -30,26 +30,24 @@ def get_microphone_level(stream, chunk_size=5000):
     return np.average(np.abs(data))
 
 def monitor_and_adjust_volume(volume, threshold_db, volume_level_db, stop_event):
+    """volume_level_db is the target system volume (0.0-1.0) during duck; backend passes original * (1 - ratio/100)."""
     audio_interface = pyaudio.PyAudio()
     stream = audio_interface.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024)
 
-    original_volume_level = volume.GetMasterVolumeLevelScalar()  # Get the current volume level
-    reduce_volume_level = original_volume_level / 2
+    original_volume_level = volume.GetMasterVolumeLevelScalar()  # Snapshot when ducking starts
+    reduce_volume_level = max(0.0, min(1.0, float(volume_level_db)))  # Use passed-in target (from settings ratio)
     volume_adjusted = False
 
     try:
         while not stop_event.is_set():
             level = get_microphone_level(stream)
 
-            # Debug statement to monitor microphone level
-            print(f"Microphone Level: {level} dB")
-
             if level > threshold_db and not volume_adjusted:
-                volume.SetMasterVolumeLevelScalar(reduce_volume_level, None)  # Set to target volume level
+                volume.SetMasterVolumeLevelScalar(reduce_volume_level, None)
                 volume_adjusted = True
 
             elif level <= threshold_db and volume_adjusted:
-                volume.SetMasterVolumeLevelScalar(original_volume_level, None)  # Restore original volume level
+                volume.SetMasterVolumeLevelScalar(original_volume_level, None)
                 volume_adjusted = False
 
     finally:
@@ -58,32 +56,77 @@ def monitor_and_adjust_volume(volume, threshold_db, volume_level_db, stop_event)
         audio_interface.terminate()
 
 
+def monitor_spotify_duck(spotify_controller, threshold_db, duck_ratio_percent, stop_event):
+    """When mic is loud, lower Spotify volume by duck_ratio_percent (100 = mute). When quiet, restore."""
+    if not getattr(spotify_controller, "sp", None):
+        return
+    audio_interface = pyaudio.PyAudio()
+    stream = audio_interface.open(
+        format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024
+    )
+    stored_volume = None
+    ratio = max(0, min(100, duck_ratio_percent)) / 100.0  # 0-1
+
+    try:
+        while not stop_event.is_set():
+            level = get_microphone_level(stream)
+            if level > threshold_db and stored_volume is None:
+                current = spotify_controller.get_current_volume()
+                if current is not None:
+                    stored_volume = current
+                    new_vol = max(0, min(100, int(current * (1.0 - ratio))))
+                    spotify_controller.sp.volume(new_vol)
+            elif level <= threshold_db and stored_volume is not None:
+                spotify_controller.sp.volume(stored_volume)
+                stored_volume = None
+    finally:
+        if stored_volume is not None:
+            try:
+                spotify_controller.sp.volume(stored_volume)
+            except Exception:
+                pass
+        stream.stop_stream()
+        stream.close()
+        audio_interface.terminate()
+
+
 
         
 
+def _get_endpoint_volume():
+    """Get IAudioEndpointVolume for default speakers. Prefer EndpointVolume (modern pycaw)."""
+    device = AudioUtilities.GetSpeakers()
+    volume = getattr(device, "EndpointVolume", None)
+    if volume is not None:
+        return cast(volume, POINTER(IAudioEndpointVolume))
+    if getattr(device, "Activate", None) is not None:
+        iface = device.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+        return cast(iface, POINTER(IAudioEndpointVolume))
+    return None
+
+
 def print_audio_device_info():
-    devices = AudioUtilities.GetSpeakers()
-    interface = devices.Activate(
-        IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    volume = cast(interface, POINTER(IAudioEndpointVolume))
-
-    device_name = devices.GetDeviceFriendlyName()
-    device_id = devices.GetId()
-
+    device = AudioUtilities.GetSpeakers()
+    volume = _get_endpoint_volume()
+    if volume is None:
+        print("Could not get volume interface.")
+        return
+    device_name = getattr(device, "FriendlyName", None) or getattr(device, "GetDeviceFriendlyName", lambda: "Unknown")()
+    device_id = getattr(device, "GetId", lambda: "")()
     print(f"Default Audio Playback Device: {device_name}")
     print(f"Device ID: {device_id}")
 
+
 if __name__ == "__main__":
     threshold_db = 30  # Adjust this threshold to your preference
-    #volume_level_db = 0.5  # Target volume level (0.0 to 1.0, 0.5 for half volume)
 
-    devices = AudioUtilities.GetSpeakers()
-    interface = devices.Activate(
-        IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    volume = cast(interface, POINTER(IAudioEndpointVolume))
+    volume = _get_endpoint_volume()
+    if volume is None:
+        print("Could not get volume interface (pycaw). Check EndpointVolume / Activate.")
+        raise SystemExit(1)
 
     stop_event = threading.Event()
-    monitor_thread = threading.Thread(target=monitor_and_adjust_volume, args=(volume, threshold_db, stop_event))
+    monitor_thread = threading.Thread(target=monitor_and_adjust_volume, args=(volume, threshold_db, 0.5, stop_event))
 
     monitor_thread.start()
 
