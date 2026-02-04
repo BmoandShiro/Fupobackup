@@ -1064,18 +1064,19 @@ body.dashboard-window,
   background: transparent;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
 .dashboard-bar-scaled {
-  width: 100%;
-  height: 100%;
+  width: 560px;
+  max-width: 100%;
   min-width: 0;
-  min-height: 0;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: center;
 }
 
@@ -1115,6 +1116,13 @@ body.dashboard-window,
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+.dashboard-bar-layout.status-expanded .dashboard-bar-status-expanded {
+  align-self: center;
+  width: 92%;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .dashboard-bar-status-expanded-text {
   font-size: 0.8rem;
