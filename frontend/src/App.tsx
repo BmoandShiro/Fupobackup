@@ -89,7 +89,7 @@ const App: React.FC = () => {
             decorations: false,
             alwaysOnTop: true,
             transparent: true,
-            resizable: false,
+            resizable: true,
             shadow: false,
           });
           w.once("tauri://created", () => {

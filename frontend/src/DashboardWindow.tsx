@@ -72,6 +72,14 @@ function Sep() {
   return <span className="dashboard-bar-sep" aria-hidden />;
 }
 
+function speakStatus(text: string) {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.95;
+  window.speechSynthesis.speak(u);
+}
+
 export const DashboardWindow: React.FC = () => {
   const [status, setStatus] = useState<string>("Ready.");
   const [listening, setListening] = useState(false);
@@ -135,10 +143,22 @@ export const DashboardWindow: React.FC = () => {
         .command(transcript)
         .then((r) => {
           const res = r as { display?: string; spoken?: string };
-          setStatus(res.display || res.spoken || "Done.");
+          const msg = res.display || res.spoken || "Done.";
+          setStatus(msg);
+          api.getSettings().then((s) => {
+            if (s && (s.read_status_after_command === true || s.read_status_after_command === "true")) {
+              speakStatus(msg);
+            }
+          }).catch(() => {});
         })
         .catch((e) => {
-          setStatus(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+          const msg = `Failed: ${e instanceof Error ? e.message : String(e)}`;
+          setStatus(msg);
+          api.getSettings().then((s) => {
+            if (s && (s.read_status_after_command === true || s.read_status_after_command === "true")) {
+              speakStatus(msg);
+            }
+          }).catch(() => {});
         })
         .finally(() => setListening(false));
     };
@@ -196,20 +216,16 @@ export const DashboardWindow: React.FC = () => {
   }, []);
 
   const toggleStatusExpanded = useCallback(() => {
-    setStatusExpanded((prev) => {
-      const next = !prev;
-      try {
-        void import("@tauri-apps/api/window").then(({ getCurrentWindow, LogicalSize }) => {
-          const w = getCurrentWindow();
-          const size = next ? new LogicalSize(560, 132) : new LogicalSize(560, 52);
-          w.setSize(size).catch(() => {});
-        });
-      } catch {
-        // not in Tauri
-      }
-      return next;
-    });
-  }, []);
+    const next = !statusExpanded;
+    import("@tauri-apps/api/window")
+      .then(({ getCurrentWindow, LogicalSize }) => {
+        const w = getCurrentWindow();
+        const size = next ? new LogicalSize(560, 132) : new LogicalSize(560, 52);
+        return w.setSize(size);
+      })
+      .then(() => setStatusExpanded(next))
+      .catch(() => setStatusExpanded(next));
+  }, [statusExpanded]);
 
   return (
     <div className="dashboard-bar-wrap" style={{ ["--pill-opacity" as string]: opacity }}>
